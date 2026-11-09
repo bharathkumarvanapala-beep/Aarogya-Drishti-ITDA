@@ -1,0 +1,19 @@
+{
+  "name": "Aarogya Drishti — Every Smile Deserves Care",
+  "short_name": "Aarogya Drishti",
+  "description": "Community oral healthcare, early cancer detection, and telemedicine platform for rural and tribal communities in Alluri Sitharama Raju District, Andhra Pradesh.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#E8F5EF",
+  "theme_color": "#075B4D",
+  "orientation": "portrait-primary",
+  "categories": ["medical", "health", "community"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

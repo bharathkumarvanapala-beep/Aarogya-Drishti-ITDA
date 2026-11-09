@@ -1,0 +1,160 @@
+/* Bootstrap 5 Integration for Guided Oral Camera & Clinical Quality Station */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Nature Theme Overrides for Bootstrap Components */
+.camera-bootstrap-container {
+  font-family: inherit;
+}
+
+/* Primary Nature Theme Action Buttons */
+.camera-bootstrap-container .btn-forest {
+  background-color: #075B4D;
+  border-color: #075B4D;
+  color: #ffffff;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+}
+
+.camera-bootstrap-container .btn-forest:hover,
+.camera-bootstrap-container .btn-forest:focus {
+  background-color: #087653;
+  border-color: #087653;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(7, 91, 77, 0.25);
+}
+
+.camera-bootstrap-container .btn-outline-forest {
+  color: #075B4D;
+  border-color: #075B4D;
+  font-weight: 600;
+  background-color: transparent;
+}
+
+.camera-bootstrap-container .btn-outline-forest:hover {
+  background-color: #075B4D;
+  color: #ffffff;
+}
+
+.camera-bootstrap-container .btn-emerald {
+  background-color: #087653;
+  border-color: #087653;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.camera-bootstrap-container .btn-emerald:hover {
+  background-color: #398F72;
+  border-color: #398F72;
+  color: #ffffff;
+}
+
+/* Bootstrap Cards with Nature styling */
+.camera-bootstrap-container .card-nature {
+  background: #ffffff;
+  border: 1px solid #DCEFEA;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px -2px rgba(7, 91, 77, 0.08);
+}
+
+.camera-bootstrap-container .card-nature-header {
+  background-color: #075B4D;
+  color: #ffffff;
+  border-top-left-radius: calc(1rem - 1px);
+  border-top-right-radius: calc(1rem - 1px);
+  padding: 0.85rem 1.25rem;
+}
+
+/* Bootstrap Badges tuned to Nature Theme */
+.camera-bootstrap-container .badge-forest {
+  background-color: #075B4D;
+  color: #ffffff;
+  padding: 0.4em 0.8em;
+  font-weight: 600;
+}
+
+.camera-bootstrap-container .badge-emerald {
+  background-color: #DCEFEA;
+  color: #075B4D;
+  border: 1px solid #398F72;
+  font-weight: 600;
+}
+
+/* Reticle pulsing overlay */
+@keyframes reticle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.6;
+  }
+}
+
+.camera-reticle-pulse {
+  animation: reticle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bootstrap Form Switch Nature Overrides */
+.camera-bootstrap-container .form-check-input:checked {
+  background-color: #087653;
+  border-color: #087653;
+}
+
+.camera-bootstrap-container .form-check-input:focus {
+  border-color: #398F72;
+  box-shadow: 0 0 0 0.25rem rgba(8, 118, 83, 0.25);
+}
+
+.camera-bootstrap-container .form-switch .form-check-input {
+  cursor: pointer;
+  height: 1.25rem;
+  width: 2.25rem;
+}
+
+/* Bootstrap Progress Bars */
+.camera-bootstrap-container .progress {
+  background-color: #E8F5EF;
+  border-radius: 9999px;
+  overflow: hidden;
+  height: 0.65rem;
+}
+
+.camera-bootstrap-container .progress-bar-forest {
+  background-color: #075B4D;
+}
+
+.camera-bootstrap-container .progress-bar-emerald {
+  background-color: #087653;
+}
+
+/* Bootstrap Alert Nature Style */
+.camera-bootstrap-container .alert-nature {
+  background-color: #E8F5EF;
+  border: 1px solid #398F72;
+  color: #075B4D;
+  border-radius: 0.75rem;
+}
+
+/* Bootstrap Modal Overlay */
+.camera-bootstrap-container .modal-backdrop-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(7, 30, 25, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+}
+
+.camera-bootstrap-container .modal-dialog-custom {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1055;
+  width: 92%;
+  max-width: 600px;
+}
+

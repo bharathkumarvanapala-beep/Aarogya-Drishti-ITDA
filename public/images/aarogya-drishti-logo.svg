@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 70" fill="none">
+  <!-- Eye outer contour (Drishti / Vision) in Primary Forest Green -->
+  <path d="M12 35 C 32 8, 88 8, 108 35 C 88 62, 32 62, 12 35 Z" stroke="#075E4E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Inner iris circle in Emerald Green -->
+  <circle cx="60" cy="35" r="18" fill="#10B981"/>
+  <!-- Central Leaf (Aarogya / Health) in Dark Forest Green -->
+  <path d="M60 20 C 60 20, 71 30, 71 38 C 71 44, 66 48, 60 48 C 54 48, 49 44, 49 38 C 49 30, 60 20, 60 20 Z" fill="#064B40"/>
+  <!-- Crisp light reflection glint -->
+  <circle cx="56" cy="31" r="3.5" fill="#FFFFFF"/>
+</svg>
+

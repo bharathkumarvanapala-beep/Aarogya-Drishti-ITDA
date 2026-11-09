@@ -1,0 +1,905 @@
+// AAROGYA DRISHTI (ఆరోగ్య దృష్టి) — Clinical Database Architecture
+// Alluri Sitharama Raju District, Andhra Pradesh, India
+// Production Prisma Schema v1.0.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// DOMAIN 1: IDENTITY, ROLES & ADMINISTRATIVE HIERARCHY
+// =============================================================================
+
+enum RoleCode {
+  SUPER_ADMIN
+  DISTRICT_ADMIN
+  MEDICAL_OFFICER
+  COMMUNITY_HEALTH_OFFICER
+  ASHA_WORKER
+  ANM_WORKER
+  SPECIALIST_DOCTOR
+  HOSPITAL_STAFF
+  LAB_TECHNICIAN
+  PATIENT
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum FacilityType {
+  DISTRICT_HOSPITAL
+  AREA_HOSPITAL
+  COMMUNITY_HEALTH_CENTRE
+  PRIMARY_HEALTH_CENTRE
+  SUB_CENTRE
+}
+
+enum HabitationCategory {
+  PVTG              // Particularly Vulnerable Tribal Group
+  AGENCY_SCHEDULED  // Scheduled Agency Area
+  NON_AGENCY        // Plain / Non-Scheduled Area
+}
+
+model UserAccount {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  username              String                   @unique @db.VarChar(64)
+  email                 String?                  @unique @db.VarChar(128)
+  passwordHash          String                   @db.VarChar(255)
+  fullName              String                   @db.VarChar(128)
+  phone                 String?                  @db.VarChar(20)
+  isActive              Boolean                  @default(true)
+  mfaEnabled            Boolean                  @default(false)
+  mfaSecret             String?                  @db.VarChar(128)
+  apmcRegNumber         String?                  @db.VarChar(64) // Andhra Pradesh Medical Council Reg #
+  failedLoginAttempts   Int                      @default(0)
+  lockedUntil           DateTime?
+  lastLoginAt           DateTime?
+  accountStatus         AccountStatus            @default(APPROVED)
+  designationType       String?                  @db.VarChar(64)
+  professionalIdNumber  String?                  @db.VarChar(64)
+  medicalQualification  String?                  @db.VarChar(128)
+  specialization        String?                  @db.VarChar(128)
+  assignedHealthCentre  String?                  @db.VarChar(128)
+  rejectionReason       String?                  @db.VarChar(255)
+  approvedAt            DateTime?
+  approvedById          String?                  @db.Uuid
+  passwordResetToken    String?                  @db.VarChar(128)
+  passwordResetExpires  DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  // Relationships
+  roles                 UserRole[]
+  facilityAssignments   UserFacilityAssignment[]
+  villageAssignments    UserVillageAssignment[]
+  sessions              UserSession[]
+  patientsRegistered    Patient[]                @relation("RegisteredBy")
+  cardsIssued           PatientCard[]            @relation("CardIssuedBy")
+  cardHistoriesRecorded PatientCardHistory[]     @relation("CardActionBy")
+  consentsRecorded      Consent[]                @relation("ConsentRecordedBy")
+  screeningsConducted   Screening[]              @relation("ConductedBy")
+  clinicalReviews       ClinicalReview[]         @relation("ReviewedBy")
+  specialistAppointments SpecialistAppointment[] @relation("SpecialistDoctor")
+  followUpsAssigned     FollowUp[]               @relation("FollowUpAssignedTo")
+  syncSubmissions       SyncSubmission[]         @relation("SyncSubmittedBy")
+  syncConflictsResolved SyncConflict[]           @relation("ConflictResolvedBy")
+  auditLogs             AuditLog[]               @relation("AuditUser")
+  notifications         InAppNotification[]
+
+  @@index([username])
+  @@index([email])
+  @@index([isActive])
+  @@map("user_accounts")
+}
+
+model Role {
+  id          String     @id @default(uuid()) @db.Uuid
+  code        RoleCode   @unique
+  name        String     @db.VarChar(64)
+  description String     @db.VarChar(255)
+  createdAt   DateTime   @default(now())
+
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @db.Uuid
+  roleId    String      @db.Uuid
+  assignedAt DateTime   @default(now())
+
+  user      UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Mandal {
+  id          String      @id @default(uuid()) @db.Uuid
+  code        String      @unique @db.VarChar(32) // e.g. PADERU, ARAKU_VALLEY
+  name        String      @db.VarChar(64)
+  nameTe      String      @db.VarChar(64)
+  district    String      @default("Alluri Sitharama Raju") @db.VarChar(64)
+  itdaAgency  String      @default("ITDA Paderu") @db.VarChar(64)
+  createdAt   DateTime    @default(now())
+
+  facilities  Facility[]
+  villages    Village[]
+
+  @@index([code])
+  @@map("mandals")
+}
+
+model Facility {
+  id               String                   @id @default(uuid()) @db.Uuid
+  code             String                   @unique @db.VarChar(32) // e.g. CHC-PADERU, AH-ARAKU
+  name             String                   @db.VarChar(128)
+  type             FacilityType
+  mandalId         String                   @db.Uuid
+  latitude         Float?
+  longitude        Float?
+  contactPhone     String?                  @db.VarChar(20)
+  contactEmail     String?                  @db.VarChar(128)
+  isActive         Boolean                  @default(true)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  mandal           Mandal                   @relation(fields: [mandalId], references: [id])
+  villagesCovered  Village[]                @relation("PrimaryFacility")
+  userAssignments  UserFacilityAssignment[]
+  screenings       Screening[]              @relation("ScreeningFacility")
+  referralsFrom    Referral[]               @relation("SourceFacility")
+  referralsTo      Referral[]               @relation("TargetFacility")
+
+  @@index([mandalId])
+  @@index([type])
+  @@index([isActive])
+  @@map("facilities")
+}
+
+model Village {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  code                String                 @unique @db.VarChar(32) // e.g. VIL-KOTHAPALLI
+  name                String                 @db.VarChar(128)
+  nameTe              String                 @db.VarChar(128)
+  mandalId            String                 @db.Uuid
+  primaryFacilityId   String?                @db.Uuid
+  habitationCategory  HabitationCategory     @default(PVTG)
+  approxPopulation    Int?
+  latitude            Float?
+  longitude           Float?
+  createdAt           DateTime               @default(now())
+
+  mandal              Mandal                 @relation(fields: [mandalId], references: [id])
+  primaryFacility     Facility?              @relation("PrimaryFacility", fields: [primaryFacilityId], references: [id])
+  userAssignments     UserVillageAssignment[]
+  patients            Patient[]              @relation("PatientHabitation")
+
+  @@index([mandalId])
+  @@index([habitationCategory])
+  @@map("villages")
+}
+
+model UserFacilityAssignment {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  facilityId  String      @db.Uuid
+  isPrimary   Boolean     @default(true)
+  assignedAt  DateTime    @default(now())
+
+  user        UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facility    Facility    @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, facilityId])
+  @@index([userId])
+  @@index([facilityId])
+  @@map("user_facility_assignments")
+}
+
+model UserVillageAssignment {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  villageId   String      @db.Uuid
+  assignedAt  DateTime    @default(now())
+
+  user        UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  village     Village     @relation(fields: [villageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, villageId])
+  @@index([userId])
+  @@index([villageId])
+  @@map("user_village_assignments")
+}
+
+model UserSession {
+  id               String      @id @default(uuid()) @db.Uuid
+  userId           String      @db.Uuid
+  refreshTokenHash String      @db.VarChar(255)
+  deviceId         String?     @db.VarChar(128)
+  ipAddress        String?     @db.VarChar(45)
+  userAgent        String?     @db.VarChar(255)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime    @default(now())
+
+  user             UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+// =============================================================================
+// DOMAIN 2: PATIENT IDENTITY, CARDS, CAREGIVERS & CONSENT
+// =============================================================================
+
+enum Gender {
+  MALE
+  FEMALE
+  TRANSGENDER
+  OTHER
+}
+
+enum CardStatus {
+  ACTIVE
+  REPLACED
+  REVOKED
+}
+
+enum CardAction {
+  ISSUED
+  REPLACED_LOST
+  REPLACED_DAMAGED
+  REVOKED
+}
+
+enum AuthorizationBasis {
+  PATIENT_DELEGATED
+  POWER_OF_ATTORNEY
+  CLINICALLY_INCAPACITATED_NEXT_OF_KIN
+}
+
+enum ConsentType {
+  VERBAL_RECORDED
+  WITNESSED_THUMBPRINT
+  WRITTEN_BILINGUAL
+}
+
+enum ConsentStatus {
+  ACTIVE
+  WITHDRAWN
+  EXPIRED
+}
+
+model Patient {
+  id                    String               @id @default(uuid()) @db.Uuid
+  uniquePatientId       String               @unique @db.VarChar(32) // e.g. ASR-PAT-2026-0842
+  fullName              String               @db.VarChar(128)
+  age                   Int
+  gender                Gender
+  phone                 String?              @db.VarChar(20) // Nullable for phone-less registrations
+  primarySpokenLanguage String               @default("te") @db.VarChar(8)
+  isTribalMember        Boolean              @default(true)
+  tribeCommunity        String?              @db.VarChar(64) // e.g. Konda Dora, Bagata, Valmiki
+  habitationVillageId   String               @db.Uuid
+  aadhaarVaultRef       String?              @unique @db.VarChar(64) // DPDP compliant opaque token
+  socioEconomicBPL      Boolean              @default(true)
+  aarogyasriNumber      String?              @db.VarChar(32) // Dr. YSR Aarogyasri Trust Card #
+  registeredById        String               @db.Uuid
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  habitationVillage     Village              @relation("PatientHabitation", fields: [habitationVillageId], references: [id])
+  registeredBy          UserAccount          @relation("RegisteredBy", fields: [registeredById], references: [id])
+  cards                 PatientCard[]
+  cardHistories         PatientCardHistory[]
+  caregivers            CaregiverAccess[]
+  consents              Consent[]
+  screenings            Screening[]
+  referrals             Referral[]
+  followUps             FollowUp[]
+
+  @@index([uniquePatientId])
+  @@index([habitationVillageId])
+  @@index([registeredById])
+  @@index([fullName, habitationVillageId])
+  @@map("patients")
+}
+
+model PatientCard {
+  id               String       @id @default(uuid()) @db.Uuid
+  patientId        String       @db.Uuid
+  cardSerial       String       @unique @db.VarChar(32) // e.g. ASR-CRD-8420-91
+  qrReferenceToken String       @unique @db.VarChar(255) // Non-sensitive reference URI
+  status           CardStatus   @default(ACTIVE)
+  issuedAt         DateTime     @default(now())
+  issuedById       String       @db.Uuid
+
+  patient          Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  issuedBy         UserAccount  @relation("CardIssuedBy", fields: [issuedById], references: [id])
+
+  @@index([cardSerial])
+  @@index([qrReferenceToken])
+  @@index([patientId])
+  @@map("patient_cards")
+}
+
+model PatientCardHistory {
+  id               String       @id @default(uuid()) @db.Uuid
+  patientId        String       @db.Uuid
+  cardSerial       String       @db.VarChar(32)
+  qrReferenceToken String       @db.VarChar(255)
+  previousStatus   CardStatus
+  action           CardAction
+  reason           String?      @db.VarChar(255)
+  performedById    String       @db.Uuid
+  timestamp        DateTime     @default(now())
+
+  patient          Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  performedBy      UserAccount  @relation("CardActionBy", fields: [performedById], references: [id])
+
+  @@index([patientId])
+  @@index([timestamp])
+  @@map("patient_card_histories")
+}
+
+model CaregiverAccess {
+  id                    String              @id @default(uuid()) @db.Uuid
+  patientId             String              @db.Uuid
+  caregiverName         String              @db.VarChar(128)
+  relationship          String              @db.VarChar(64) // SPOUSE, SON, DAUGHTER, VILLAGE_ELDER
+  contactPhone          String?             @db.VarChar(20)
+  authorizationBasis    AuthorizationBasis  @default(PATIENT_DELEGATED)
+  canAccessScreenings   Boolean             @default(true)
+  canCoordinateReferrals Boolean            @default(true)
+  validUntil            DateTime?
+  isRevoked             Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+
+  patient               Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([isRevoked])
+  @@map("caregiver_access")
+}
+
+model Consent {
+  id                    String         @id @default(uuid()) @db.Uuid
+  patientId             String         @db.Uuid
+  type                  ConsentType    @default(VERBAL_RECORDED)
+  recordedById          String         @db.Uuid
+  witnessName           String?        @db.VarChar(128)
+  witnessRelation       String?        @db.VarChar(64)
+  witnessPhone          String?        @db.VarChar(20)
+  purposeOralExam       Boolean        @default(true)
+  purposePhotography    Boolean        @default(true)
+  purposeNonClinicalDemo Boolean       @default(true)
+  purposeHospitalReferral Boolean      @default(true)
+  languageCode          String         @default("te") @db.VarChar(8)
+  recordedAt            DateTime       @default(now())
+  withdrawalDate        DateTime?
+  withdrawalReason      String?        @db.VarChar(255)
+  status                ConsentStatus  @default(ACTIVE)
+
+  patient               Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recordedBy            UserAccount    @relation("ConsentRecordedBy", fields: [recordedById], references: [id])
+  screenings            Screening[]
+
+  @@index([patientId])
+  @@index([status])
+  @@index([recordedAt])
+  @@map("consents")
+}
+
+// =============================================================================
+// DOMAIN 3: FRONTLINE SCREENING, IMAGES, QUALITY & AI DEMO
+// =============================================================================
+
+enum ScreeningStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_REVIEW
+  REVIEWED
+  REFERRED
+  CLOSED
+}
+
+enum RiskImpression {
+  LOW
+  MODERATE
+  HIGH
+  URGENT
+}
+
+enum OralViewKey {
+  RIGHT_CHEEK
+  LEFT_CHEEK
+  TONGUE
+  PALATE
+  GUMS_FLOOR
+}
+
+enum QualityVerdict {
+  ACCEPTABLE
+  RECAPTURE_REQUIRED
+}
+
+model Screening {
+  id                       String           @id @default(uuid()) @db.Uuid
+  screeningNumber          String           @unique @db.VarChar(32) // e.g. ASR-SCR-2026-0842
+  patientId                String           @db.Uuid
+  consentId                String           @db.Uuid
+  conductedById            String           @db.Uuid
+  facilityId               String           @db.Uuid
+  status                   ScreeningStatus  @default(SUBMITTED)
+
+  // Risk habits
+  tobaccoChewing           Boolean          @default(false)
+  tobaccoYears             Int?
+  gutkhaUse                Boolean          @default(false)
+  reverseSmoking           Boolean          @default(false) // High prevalence in ASR agency
+  alcoholConsumption       Boolean          @default(false)
+
+  // Clinical symptoms
+  symptomsPain             Boolean          @default(false)
+  symptomsBurning          Boolean          @default(false)
+  symptomsUlcerLongDuration Boolean         @default(false)
+  symptomsWhiteRedPatch    Boolean          @default(false)
+  trismusMouthOpeningMm    Float?           // Inter-incisal distance
+  trismusFingerCount       Int?             // 1, 2, or 3 fingers
+  frontlineRiskImpression  RiskImpression   @default(MODERATE)
+  clinicalNotes            String?          @db.Text
+
+  // Offline metadata
+  offlineSynced            Boolean          @default(false)
+  offlineDraftId           String?          @db.VarChar(64)
+  screeningDate            DateTime         @default(now())
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+
+  patient                  Patient          @relation(fields: [patientId], references: [id])
+  consent                  Consent          @relation(fields: [consentId], references: [id])
+  conductedBy              UserAccount      @relation("ConductedBy", fields: [conductedById], references: [id])
+  facility                 Facility         @relation("ScreeningFacility", fields: [facilityId], references: [id])
+  images                   ScreeningImage[]
+  clinicalReview           ClinicalReview?
+  referrals                Referral[]
+  followUps                FollowUp[]
+
+  @@index([screeningNumber])
+  @@index([patientId])
+  @@index([facilityId])
+  @@index([conductedById])
+  @@index([status])
+  @@index([screeningDate])
+  @@map("screenings")
+}
+
+model ScreeningImage {
+  id               String               @id @default(uuid()) @db.Uuid
+  screeningId      String               @db.Uuid
+  viewKey          OralViewKey
+  storagePath      String               @db.VarChar(255) // S3 object key
+  originalFilename String               @db.VarChar(255)
+  mimeType         String               @default("image/jpeg") @db.VarChar(64)
+  fileSizeBytes    Int
+  sha256Checksum   String               @db.VarChar(64)
+  uploadedAt       DateTime             @default(now())
+
+  screening        Screening            @relation(fields: [screeningId], references: [id], onDelete: Cascade)
+  qualityResult    ImageQualityResult?
+  aiAnalysis       AIResearchAnalysis?
+
+  @@unique([screeningId, viewKey])
+  @@index([screeningId])
+  @@map("screening_images")
+}
+
+model ImageQualityResult {
+  id                  String          @id @default(uuid()) @db.Uuid
+  screeningImageId    String          @unique @db.Uuid
+  verdict             QualityVerdict  @default(ACCEPTABLE)
+  sharpnessScore      Float           // Laplacian variance
+  brightnessScore     Float
+  glareScore          Float
+  resolution          String          @db.VarChar(32)
+  automatedFeedbackEn String          @db.VarChar(255)
+  automatedFeedbackTe String          @db.VarChar(255)
+  evaluatedAt         DateTime        @default(now())
+
+  screeningImage      ScreeningImage  @relation(fields: [screeningImageId], references: [id], onDelete: Cascade)
+
+  @@index([screeningImageId])
+  @@index([verdict])
+  @@map("image_quality_results")
+}
+
+model AIResearchAnalysis {
+  id                   String          @id @default(uuid()) @db.Uuid
+  screeningImageId     String          @unique @db.Uuid
+  isNonClinicalDemo    Boolean         @default(true)
+  score                Float?          // Must be null or null-enforced per AI safety boundary
+  modelVersion         String          @db.VarChar(64) // e.g. BioMed-Oral-Demo-v1.4
+  heatmapStoragePath   String?         @db.VarChar(255)
+  anatomicalLandmarks  Json?
+  safetyDisclaimer     String          @default("STRICTLY NON-CLINICAL: For academic and research demonstration only. Not for diagnosis or patient treatment decisions.") @db.VarChar(255)
+  generatedAt          DateTime        @default(now())
+
+  screeningImage       ScreeningImage  @relation(fields: [screeningImageId], references: [id], onDelete: Cascade)
+
+  @@index([screeningImageId])
+  @@map("ai_research_analyses")
+}
+
+// =============================================================================
+// DOMAIN 4: CLINICAL TRIAGE, HOSPITAL REFERRAL & INVESTIGATIONS
+// =============================================================================
+
+enum TriageCategory {
+  NORMAL
+  BENIGN
+  OPMD_LOW_RISK
+  OPMD_HIGH_RISK
+  SUSPECTED_MALIGNANCY
+}
+
+enum ClinicalAction {
+  NO_ACTION
+  RECALL_3_MONTHS
+  TELE_CONSULT
+  PHYSICAL_REFERRAL
+}
+
+enum ReferralUrgency {
+  EMERGENCY_24H
+  URGENT_72H
+  ROUTINE_2W
+}
+
+enum ReferralStatus {
+  INITIATED
+  ACCEPTED
+  SPECIALIST_EVALUATED
+  BIOPSY_ORDERED
+  TREATMENT_PLANNED
+  COMPLETED
+  LOST_TO_FOLLOWUP
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  ATTENDED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum InvestigationType {
+  PUNCH_BIOPSY
+  INCISIONAL_BIOPSY
+  CYTOLOGY_BRUSH
+  HISTOPATHOLOGY
+}
+
+enum BiopsyStage {
+  SAMPLE_COLLECTED
+  TRANSPORT_TO_LAB
+  TISSUE_PROCESSING
+  HISTOPATH_REPORTED
+  ONCOLOGY_BOARD_REVIEW
+}
+
+enum HistopathVerdict {
+  BENIGN_HYPERKERATOSIS
+  MILD_DYSPLASIA
+  MODERATE_DYSPLASIA
+  SEVERE_DYSPLASIA
+  CARCINOMA_IN_SITU
+  SQUAMOUS_CELL_CARCINOMA
+  INCONCLUSIVE
+}
+
+enum FollowUpType {
+  POST_REFERRAL_ADHERENCE
+  TOBACCO_CESSATION_RECALL
+  POST_OP_CHECK
+  ANNUAL_RESURVEILLANCE
+}
+
+enum FollowUpStatus {
+  PENDING
+  COMPLETED
+  ESCALATED_OVERDUE
+}
+
+model ClinicalReview {
+  id                    String          @id @default(uuid()) @db.Uuid
+  screeningId           String          @unique @db.Uuid
+  reviewedById          String          @db.Uuid
+  apmcRegistrationNumber String         @db.VarChar(64)
+  triageCategory        TriageCategory
+  provisionalDiagnosis  String          @db.VarChar(255)
+  clinicalNotes         String          @db.Text
+  recommendedAction     ClinicalAction  @default(PHYSICAL_REFERRAL)
+  reviewedAt            DateTime        @default(now())
+
+  screening             Screening       @relation(fields: [screeningId], references: [id], onDelete: Cascade)
+  reviewedBy            UserAccount     @relation("ReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([screeningId])
+  @@index([reviewedById])
+  @@index([triageCategory])
+  @@map("clinical_reviews")
+}
+
+model Referral {
+  id                          String                    @id @default(uuid()) @db.Uuid
+  referralNumber              String                    @unique @db.VarChar(32) // e.g. ASR-REF-2026-0842
+  patientId                   String                    @db.Uuid
+  screeningId                 String                    @db.Uuid
+  sourceFacilityId            String                    @db.Uuid
+  targetFacilityId            String                    @db.Uuid
+  urgency                     ReferralUrgency           @default(URGENT_72H)
+  reason                      String                    @db.VarChar(255)
+  status                      ReferralStatus            @default(INITIATED)
+  transportAssistanceRequired Boolean                   @default(true)
+  tribalLiaisonAssigned       String?                   @db.VarChar(128)
+  initiatedAt                 DateTime                  @default(now())
+  updatedAt                   DateTime                  @updatedAt
+
+  patient                     Patient                   @relation(fields: [patientId], references: [id])
+  screening                   Screening                 @relation(fields: [screeningId], references: [id])
+  sourceFacility              Facility                  @relation("SourceFacility", fields: [sourceFacilityId], references: [id])
+  targetFacility              Facility                  @relation("TargetFacility", fields: [targetFacilityId], references: [id])
+  appointment                 SpecialistAppointment?
+  investigations              DiagnosticInvestigation[]
+
+  @@index([referralNumber])
+  @@index([patientId])
+  @@index([sourceFacilityId])
+  @@index([targetFacilityId])
+  @@index([urgency])
+  @@index([status])
+  @@map("referrals")
+}
+
+model SpecialistAppointment {
+  id               String            @id @default(uuid()) @db.Uuid
+  referralId       String            @unique @db.Uuid
+  specialistId     String            @db.Uuid
+  scheduledDate    DateTime
+  timeSlot         String            @db.VarChar(32) // e.g. "09:30 AM"
+  opdDepartment    String            @default("Surgical Oncology / Head & Neck") @db.VarChar(128)
+  status           AppointmentStatus @default(SCHEDULED)
+  cancellationReason String?         @db.VarChar(255)
+  createdAt        DateTime          @default(now())
+
+  referral         Referral          @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  specialist       UserAccount       @relation("SpecialistDoctor", fields: [specialistId], references: [id])
+
+  @@index([referralId])
+  @@index([specialistId])
+  @@index([scheduledDate])
+  @@map("specialist_appointments")
+}
+
+model DiagnosticInvestigation {
+  id                   String             @id @default(uuid()) @db.Uuid
+  referralId           String             @db.Uuid
+  investigationType    InvestigationType  @default(PUNCH_BIOPSY)
+  stage                BiopsyStage        @default(SAMPLE_COLLECTED)
+  specimenSite         String             @db.VarChar(128) // e.g. "Right Buccal Mucosa"
+  clinicalImpression   String?            @db.VarChar(255)
+  histopathologyResult HistopathVerdict?
+  pathologistNotes     String?            @db.Text
+  labReportStoragePath String?            @db.VarChar(255)
+  collectedAt          DateTime           @default(now())
+  reportedAt           DateTime?
+
+  referral             Referral           @relation(fields: [referralId], references: [id], onDelete: Cascade)
+
+  @@index([referralId])
+  @@index([stage])
+  @@index([investigationType])
+  @@map("diagnostic_investigations")
+}
+
+model FollowUp {
+  id               String          @id @default(uuid()) @db.Uuid
+  patientId        String          @db.Uuid
+  screeningId      String?         @db.Uuid
+  assignedToId     String          @db.Uuid
+  dueDate          DateTime
+  type             FollowUpType    @default(POST_REFERRAL_ADHERENCE)
+  status           FollowUpStatus  @default(PENDING)
+  patientContacted Boolean         @default(false)
+  notes            String?         @db.Text
+  completedAt      DateTime?
+  createdAt        DateTime        @default(now())
+
+  patient          Patient         @relation(fields: [patientId], references: [id])
+  screening        Screening?      @relation(fields: [screeningId], references: [id])
+  assignedTo       UserAccount     @relation("FollowUpAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([patientId])
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("follow_ups")
+}
+
+// =============================================================================
+// DOMAIN 5: OFFLINE SYNCHRONIZATION ENGINE & CONFLICTS
+// =============================================================================
+
+enum SyncStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  PARTIAL_CONFLICT
+  FAILED
+}
+
+enum SyncOperation {
+  CREATE
+  UPDATE
+  UPSERT
+}
+
+enum SyncItemStatus {
+  APPLIED
+  DUPLICATE_SKIPPED
+  CONFLICT_FLAGGED
+  ERROR
+}
+
+enum ConflictResolution {
+  PENDING
+  SERVER_WINS
+  CLIENT_WINS
+  MANUAL_MERGE
+}
+
+model SyncSubmission {
+  id                 String       @id @default(uuid()) @db.Uuid
+  clientSubmissionId String       @unique @db.VarChar(64)
+  deviceId           String       @db.VarChar(128)
+  submittedById      String       @db.Uuid
+  itemCount          Int
+  idempotencyKey     String       @unique @db.VarChar(128)
+  status             SyncStatus   @default(RECEIVED)
+  receivedAt         DateTime     @default(now())
+  processedAt        DateTime?
+
+  submittedBy        UserAccount  @relation("SyncSubmittedBy", fields: [submittedById], references: [id])
+  items              SyncItem[]
+
+  @@index([clientSubmissionId])
+  @@index([idempotencyKey])
+  @@index([submittedById])
+  @@index([status])
+  @@map("sync_submissions")
+}
+
+model SyncItem {
+  id             String          @id @default(uuid()) @db.Uuid
+  submissionId   String          @db.Uuid
+  clientEntityId String          @db.VarChar(64)
+  entityType     String          @db.VarChar(64) // e.g. Patient, Consent, Screening
+  operation      SyncOperation   @default(CREATE)
+  payloadJson    Json
+  status         SyncItemStatus  @default(APPLIED)
+  serverEntityId String?         @db.VarChar(64)
+  errorMessage   String?         @db.VarChar(255)
+
+  submission     SyncSubmission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  conflict       SyncConflict?
+
+  @@index([submissionId])
+  @@index([clientEntityId])
+  @@index([status])
+  @@map("sync_items")
+}
+
+model SyncConflict {
+  id                      String              @id @default(uuid()) @db.Uuid
+  syncItemId              String              @unique @db.Uuid
+  clientVersionTimestamp  DateTime
+  serverVersionTimestamp  DateTime
+  resolution              ConflictResolution  @default(PENDING)
+  resolvedById            String?             @db.Uuid
+  resolvedAt              DateTime?
+
+  syncItem                SyncItem            @relation(fields: [syncItemId], references: [id], onDelete: Cascade)
+  resolvedBy              UserAccount?        @relation("ConflictResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([syncItemId])
+  @@index([resolution])
+  @@map("sync_conflicts")
+}
+
+// =============================================================================
+// DOMAIN 6: GOVERNANCE, AUDIT LOGGING & SYSTEM TELEMETRY
+// =============================================================================
+
+enum SeverityLevel {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum NotificationType {
+  CLINICAL_ALERT
+  REFERRAL_UPDATE
+  SYNC_COMPLETE
+  SECURITY_ALERT
+}
+
+model AuditLog {
+  id            String       @id @default(uuid()) @db.Uuid
+  action        String       @db.VarChar(64) // e.g. PHI_VIEW, PATIENT_CREATE, CLINICAL_REVIEW_SIGN
+  entityName    String       @db.VarChar(64)
+  entityId      String       @db.VarChar(64)
+  performedById String?      @db.Uuid
+  ipAddress     String?      @db.VarChar(45)
+  userAgent     String?      @db.VarChar(255)
+  correlationId String?      @db.VarChar(64)
+  changesJson   Json?
+  timestamp     DateTime     @default(now())
+
+  performedBy   UserAccount? @relation("AuditUser", fields: [performedById], references: [id])
+
+  @@index([performedById])
+  @@index([entityName, entityId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
+
+model SystemEvent {
+  id          String        @id @default(uuid()) @db.Uuid
+  eventType   String        @db.VarChar(64)
+  severity    SeverityLevel @default(INFO)
+  message     String        @db.Text
+  payloadJson Json?
+  timestamp   DateTime      @default(now())
+
+  @@index([eventType])
+  @@index([severity])
+  @@index([timestamp])
+  @@map("system_events")
+}
+
+model InAppNotification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  title     String           @db.VarChar(128)
+  message   String           @db.VarChar(255)
+  type      NotificationType @default(CLINICAL_ALERT)
+  isRead    Boolean          @default(false)
+  linkUrl   String?          @db.VarChar(255)
+  createdAt DateTime         @default(now())
+
+  user      UserAccount      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("in_app_notifications")
+}

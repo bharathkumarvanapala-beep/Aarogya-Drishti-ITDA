@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const target = path.join(__dirname, 'preview-site');
+if (fs.existsSync(target)) throw new Error('Preview already exists; refusing to overwrite');
+fs.cpSync(path.resolve(__dirname, '../dist'), target, {recursive:true, errorOnExist:true, force:false});
+const index = path.join(target, 'index.html');
+let html = fs.readFileSync(index, 'utf8');
+html = html.replace('</head>', '<meta name="robots" content="noindex,nofollow"><style>body{padding-bottom:52px!important}#demo-notice{position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#fff3c4;color:#302400;padding:9px 14px;font:600 14px/1.4 system-ui;text-align:center;border-top:2px solid #c28d00}</style></head>');
+html = html.replace('</body>', '<aside id="demo-notice" role="note">DEMO ONLY — synthetic test data. Do not enter real patient details or photos. నమూనా సమాచారం మాత్రమే.</aside></body>');
+fs.writeFileSync(index, html);
+fs.writeFileSync(path.join(target, 'robots.txt'), 'User-agent: *\nDisallow: /\n', {flag:'wx'});
+console.log('Prepared isolated preview assets; original dist preserved.');

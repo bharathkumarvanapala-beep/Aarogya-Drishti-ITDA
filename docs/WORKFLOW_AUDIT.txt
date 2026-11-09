@@ -1,0 +1,50 @@
+AAROGYA DRISHTI - requirements comparison and repair record
+Date: 2026-11-09
+Source: Downloads/AAROHAN_Aarogya_Drishti_Hackathon_2026_Problem_Statement.pdf
+
+Scope: source inspection, frontend build/tests, backend unit tests. Browser,
+camera-device, database deployment and two-party video tests are not completed.
+
+PDF REQUIREMENTS VS CURRENT IMPLEMENTATION
+A Registration/history: screens and backend exist; frontend persists clinical
+records in browser storage. Full longitudinal backend integration incomplete.
+B Photos/offline: guided capture exists. Offline upload was simulated and deleted
+drafts. Encryption and durable acknowledged synchronization remain incomplete.
+C AI: explicit mock research output exists. Must verify every overlay is honestly
+labelled simulation and never represented as model-supported localization.
+D Review: frontend review and referral handoff exist in localStorage. Dedicated
+backend clinical-review workflow is absent from AppModule.
+E Telemedicine: local simulation does not satisfy an actual restricted two-party call.
+F Referrals/appointments: screens/schema exist; complete backend lifecycle missing.
+G Diagnostics: screens/schema exist; report upload/review workflow requires integration.
+H Timeline/audit: full persisted event history and immutable audit not established.
+I Navigation: screens exist; persistent assignment/reminders/escalation not established.
+J District: dashboard exists; live aggregate reporting and PHI restrictions need work.
+Security: local account/password fallback, auto-approved registration, client-trusted
+sessions and admin cross-portal access remain. Patient routes lack route guards.
+Deployment: no deployed URL or functioning infrastructure was verified.
+
+FIXES APPLIED
+1 Removed automatic default health-worker login for a fresh browser.
+2 Server-rejected login no longer falls through to local credential verification.
+3 Changing active patient clears the previous patient's screening fields/photos.
+4 Patient deduplication no longer removes unrelated records with absent unique IDs.
+5 Sync no longer deletes drafts without an actual server acknowledgement.
+6 Sync screen displays failures and does not show success for an offline attempt.
+7 Added regression test for cross-patient photograph/note contamination.
+
+VALIDATION
+Frontend initial baseline: 74 tests passed; production build passed with large bundle warning.
+After regression test: 75 tests passed.
+Backend: 18 tests passed using npm test -- --runInBand --cacheDirectory=./.jest-cache.
+Initial backend failure was test-cache filesystem access, not an assertion failure.
+
+REMAINING ACCEPTANCE WORK
+Implement transactional clinical review/referral/appointments/diagnostics/navigation
+APIs with resource-scoped authorization; wire frontend to them; implement encrypted
+offline records and idempotent acknowledged sync; connect restricted video service;
+derive patient timeline and district aggregates from persisted events; remove unsafe
+authentication fallbacks and test denied roles; complete Telugu/error/mobile checks;
+run the PDF page 6 synthetic scenario across independent browser sessions and restart
+the server to prove persistence. Do not describe current project as fully fixed or
+production-ready until those checks succeed.

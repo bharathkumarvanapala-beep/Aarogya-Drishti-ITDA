@@ -1,0 +1,102 @@
+AAROGYA DRISHTI - CONNECTED WORKFLOW HANDOVER
+2026-11-09
+
+WHAT IS IMPLEMENTED
+The /care screen is the connected clinical demonstration. Main health-worker,
+doctor, hospital, and district reporting routes now render this shared workflow.
+Public pages, patient-family previews, staff management and system-health previews
+remain separate; they are not evidence of connected functionality.
+
+Register a synthetic patient -> record examination/data consent -> add an oral
+photo with photography consent -> optional separately consented mock AI result ->
+submit -> independent signed doctor review -> hospital referral -> appointment ->
+attendance or missed visit -> rebooking/navigation -> investigation order -> report
+progress and optional PDF attachment -> clinician-entered simulated result and
+treatment linkage -> follow-up completion -> longitudinal history and aggregates.
+
+Clinical writes use authenticated NestJS /api/v1/care endpoints. The local care
+database is SQLite, not the older Prisma/PostgreSQL store. Encrypted case payloads
+use AES-256-GCM; updates and idempotency receipts use transactions. Versions reject
+stale edits. Actor identities/timestamps are supplied by the server. Reads are
+logged. The care API exposes no edit/delete operation for historic events.
+Administrators receive aggregates and cannot retrieve individual care cases.
+
+OFFLINE
+New registration drafts are encrypted in IndexedDB with a user-supplied passphrase
+using PBKDF2 and AES-GCM. No passphrase is stored. Synchronization is owner-scoped;
+the server acknowledges a stable submission ID before the draft is deleted.
+An incorrect passphrase or failed network request retains the draft.
+This does NOT yet implement offline photograph/action synchronization. The previous
+draft format is separate and is not migrated or silently deleted.
+
+VIDEO
+Two authenticated assigned participants can exchange WebRTC camera/microphone
+streams. The signaling room expires after 30 minutes. No recording is implemented.
+The automated test used two independent browser contexts and synthetic media devices;
+this proves real local WebRTC media exchange, not a real patient consultation.
+No TURN relay is configured. Cross-network/NAT operation is not established.
+
+VERIFICATION
+Frontend: production build successful; 78 existing/regression tests pass.
+Backend: build successful; 22 tests pass, including four new care-service tests.
+Live browser/API test: scripts/care-e2e.cjs
+Evidence: output/verification/e2e-results.json
+Screenshots: output/verification/consultation.png, mobile-care.png, mobile-telugu.png
+Verified: browser registration, denied unauthenticated/admin/unassigned access,
+encrypted offline registration with failed-network recovery, real local two-peer
+video, review/referral, missed visit/rebooking, investigation/report/result,
+treatment/follow-up, live district counts, browser reload persistence, 390px layout,
+Telugu switch, logout invalidation, backend-based browser sign-in with demo MFA.
+Care-service test closes/reopens SQLite to verify persistence after restart.
+Do not interpret older tests using duplicated mock logic as full security coverage.
+
+RUN LOCALLY
+Requires Node.js 24 (node:sqlite). Existing development environment configuration
+is in backend/.env; do not publish it or include it in screenshots.
+1. In backend: npm install, then npm run build, then node dist/src/main.js
+2. In project root: npm install, then npm run dev
+3. Open http://localhost:3000/login and use a clearly labelled evaluator account.
+4. Main connected screen: /care
+Default backend port: 4000. Vite proxies /api to the backend.
+Alternate ports: set PORT in backend; set API_PROXY_TARGET before starting Vite.
+Current tested instance: frontend http://127.0.0.1:3101, backend port 4100.
+The pre-existing application on ports 3000/4000 was not stopped.
+
+Synthetic evaluator usernames: asha_lakshmi, anm_sarada, dr_suresh, dr_ananya,
+hosp_paderu, admin_rajesh. Demo password: Aarogya@2026.
+Privileged demo verification code: 123456. This is explicitly simulated MFA.
+Production fallback login and production demo verification are rejected.
+Only one active server session is maintained per user; a new login replaces it.
+After backend restart, sign in again. Care records remain in the database.
+
+DATA / BACKUP
+backend/data/care.sqlite and its SQLite WAL/SHM files contain local demo state.
+backend/data/care.key is the separate encryption key. Losing it loses access to data.
+Protect the data directory with OS access controls. For a simple consistent backup,
+stop the backend and copy the complete directory to an authorized protected location.
+Restore the directory with its matching key before restarting. Never commit it.
+To obtain a clean evaluation dataset, use a new CARE_DATA_DIR, rather than deleting
+an existing database. Never use real patient records or photos in this demo.
+
+IMPORTANT REMAINING PDF GAPS - NOT CLAIMED COMPLETE
+1. Older Prisma/PostgreSQL APIs and data stores are not unified with /care. Their
+   resource-level access checks require a separate audit. This is not a certified
+   production security boundary across every legacy endpoint.
+2. Professional registration/admin approval persists through the old auth service;
+   its database-unavailable fallback is in memory. Patient-family/caregiver/card
+   screens and staff/system dashboards are still legacy previews.
+3. Production MFA, recovery message delivery, HTTPS hosting, TURN relay, external
+   reminders and deployment are not configured or verified. No public URL deployed.
+4. Image checks in the connected UI cover resolution/exposure. Complete blur/glare
+   checks, server-side image decoding, and the existing OpenCV worker integration
+   remain. Python cv2 was unavailable in the bundled runtime.
+5. Offline clinical updates/photos, full translated validation/action vocabulary,
+   detailed PHC/GP filtering, appointment slot conflict management, specialist-specific
+   assignment and governance/retention policies need further work.
+6. Dockerfile now requires Node 24 and persists the local care volume, but Docker
+   was unavailable and the container build was not tested.
+7. Production service-worker cache now excludes APIs and authorization headers;
+   an installed-PWA offline reload/device test has not been completed.
+
+This is a substantially connected, tested local synthetic demonstration, not a
+claim that every requirement in the PDF or every legacy route is fully complete.

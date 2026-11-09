@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Suspire-Inspired Healthcare Theme Palette */
+    --primary-green: #075E4E;
+    --dark-green: #064B40;
+    --light-green: #E7F2EF;
+    --soft-bg: #F7F8F5;
+    --soft-border: #B6CFC4;
+    --surface-white: #FFFFFF;
+    --text-main: #263B35;
+    --text-muted: #5F736C;
+
+    /* Backward-compatible variables for existing components */
+    --primary-forest: #075E4E;
+    --secondary-green: #064B40;
+    --accent-green: #398F72;
+    --bg-light: #F7F8F5;
+    --bg-accent: #E7F2EF;
+    --status-info: #2865A5;
+    --status-warning: #C27803;
+    --status-success: #087653;
+    --status-danger: #B44838;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-family: 'Outfit', 'Inter', 'Noto Sans Telugu', system-ui, sans-serif;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--soft-bg);
+    color: var(--text-main);
+    max-width: 100vw;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Telugu text legibility adjustment */
+  :lang(te) {
+    font-family: 'Noto Sans Telugu', 'Tenali Ramakrishna', sans-serif;
+    line-height: 1.65;
+  }
+
+  /* Reset link underlines by default across whole platform */
+  a {
+    text-decoration: none;
+  }
+
+  /* Accessible focus indicators for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid var(--primary-green);
+    outline-offset: 2px;
+  }
+
+  /* Ensure touch targets meet minimum 44px */
+  button, input, select, textarea, a {
+    touch-action: manipulation;
+  }
+
+  /* Respect reduced motion preferences for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Suspire-Inspired Soft Nature Card */
+  .nature-card {
+    background: #FFFFFF;
+    border: 1px solid rgba(182, 207, 196, 0.45);
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 20px -2px rgba(7, 94, 78, 0.05), 0 2px 6px -1px rgba(7, 94, 78, 0.02);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nature-card:hover {
+    border-color: rgba(7, 94, 78, 0.25);
+    box-shadow: 0 8px 30px -4px rgba(7, 94, 78, 0.09), 0 4px 12px -2px rgba(7, 94, 78, 0.04);
+  }
+
+  .nature-card:hover {
+    box-shadow: 0 8px 24px -4px rgba(7, 91, 77, 0.1);
+  }
+
+  .nature-card-active {
+    border-color: #398F72;
+    box-shadow: 0 0 0 2px rgba(57, 143, 114, 0.2);
+  }
+
+  /* Forest Gradient */
+  .bg-forest-gradient {
+    background: linear-gradient(135deg, #075B4D 0%, #087653 100%);
+  }
+
+  .bg-nature-light-gradient {
+    background: linear-gradient(180deg, #E8F5EF 0%, #DCEFEA 100%);
+  }
+
+  /* Micro-animation transitions */
+  .btn-transition {
+    transition: all 0.15s ease-in-out;
+  }
+  .btn-transition:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #E8F5EF;
+}
+::-webkit-scrollbar-thumb {
+  background: #B8E1D5;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #398F72;
+}
+
+/* Print styles for physical patient card */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}

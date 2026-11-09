@@ -1,0 +1,133 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'C:/Program Files/WindowsApps/OpenAI.CodexPrimaryRuntime.v26-1104-2876-0_26.1104.2876.0_x64__3k8sg7r9htsxt/dependencies/node/node_modules/playwright');
+const api = process.env.TEST_API || 'http://127.0.0.1:4100/api/v1';
+const url = process.env.TEST_URL || 'http://127.0.0.1:3100';
+const evidence = [];
+async function request(path, body, token, expected = 200, key) {
+  const r = await fetch(api + path, { method: body === undefined ? 'GET' : 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(key ? { 'X-Idempotency-Key': key } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  const data = await r.json(); assert.equal(r.status, expected, JSON.stringify(data)); return data.data;
+}
+async function login(username, role) {
+  let data = await request('/auth/login', { username, password: 'Aarogya@2026', requestedRole: role });
+  if (data.requiresMfa) data = await request('/auth/mfa/verify', { mfaSessionToken: data.mfaSessionToken, totpCode: '123456' });
+  return { ...data, role };
+}
+(async () => {
+  const worker = await login('asha_lakshmi', 'asha'), doctor = await login('dr_suresh', 'doctor'), hospital = await login('hosp_paderu', 'hospital_coordinator'), admin = await login('admin_rajesh', 'admin');
+  await request('/care/cases', undefined, undefined, 401); evidence.push('Unauthenticated API denied');
+  const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  try {
+    async function pageFor(account, viewport) {
+      const ctx = await browser.newContext({ permissions: ['camera','microphone'], ...(viewport ? {viewport} : {}) });
+      await ctx.addInitScript(({ account }) => {
+        localStorage.setItem('aarogya_jwt_token', account.accessToken);
+        localStorage.setItem('aarogya_active_user_data', JSON.stringify({ id: account.user.id, name: account.user.fullName, nameTe: account.user.nameTe, role: account.role, accountStatus: 'APPROVED', assignedVillages: account.user.assignedVillages }));
+      }, { account });
+      const p = await ctx.newPage(); p.on('pageerror', e => { evidence.push('BROWSER ERROR: ' + e.message); }); await p.goto(url + '/care'); return p;
+    }
+    const p = await pageFor(worker);
+    const image = await p.evaluate(() => { const c = document.createElement('canvas'); c.width=640; c.height=480; const x=c.getContext('2d'); for(let y=0;y<480;y+=8)for(let k=0;k<640;k+=8){x.fillStyle=((y/8+k/8)%2)?'#aa9999':'#555555';x.fillRect(k,y,8,8);}return c.toDataURL('image/png'); });
+    await p.getByText('Register patient', { exact: true }).click().catch(() => {});
+    const name = 'E2E synthetic ' + Date.now();
+    // The registration form is initially collapsed when previous test cases exist.
+    await p.locator('details').evaluate(el => el.open = true);
+    await p.getByLabel('Name', { exact: true }).fill(name);
+    await p.getByLabel('Habits, frequency and duration', { exact: true }).fill('Chewing tobacco daily for 20 years');
+    await p.getByLabel('Symptoms and duration', { exact: true }).fill('White cheek patch for 3 weeks');
+    await p.getByLabel('Consent for examination and data processing', { exact: true }).check();
+    await p.getByRole('button', { name: 'Register on server', exact: true }).click();
+    await p.getByRole('status').filter({ hasText: 'Registration saved' }).waitFor();
+    let c = (await request('/care/cases', undefined, worker.accessToken)).find(c => c.name === name);
+    assert(c); evidence.push('Browser registration persisted through API');
+    await p.getByLabel('Name', { exact: true }).fill('Offline ' + name);
+    await p.getByLabel('Offline passphrase (12+ characters)', { exact: true }).fill('Synthetic-offline-passphrase');
+    await p.getByLabel('Optional registration photo (also saved offline)', {exact:true}).setInputFiles({name:'synthetic-checker.png',mimeType:'image/png',buffer:Buffer.from(image.split(',')[1],'base64')});
+    await p.getByLabel('Photography consent / ఫోటో సమ్మతి', {exact:true}).check();
+    await p.context().setOffline(true);
+    await p.getByRole('button', { name: 'Save encrypted offline draft', exact: true }).click();
+    await p.getByRole('status').filter({hasText:'Encrypted draft saved'}).waitFor();
+    await p.context().setOffline(false);
+    await p.route('**/api/v1/care/cases', route => route.request().method() === 'POST' ? route.abort('failed') : route.continue());
+    await p.getByRole('button', {name:'Synchronize saved registrations',exact:true}).click();
+    await p.getByRole('alert').waitFor();
+    await p.unroute('**/api/v1/care/cases');
+    await p.getByRole('button', {name:'Synchronize saved registrations',exact:true}).click();
+    await p.getByRole('status').filter({hasText:'1 registrations acknowledged'}).waitFor();
+    const offline = (await request('/care/cases',undefined,worker.accessToken)).find(x=>x.name==='Offline '+name); assert.equal((await request('/care/cases/'+offline.id,undefined,worker.accessToken)).images.length,1);
+    evidence.push('Offline encrypted registration AND photo survive failed sync and succeed on retry');
+    await request(`/care/cases/${c.id}`, undefined, admin.accessToken, 403);
+    await request(`/care/cases/${c.id}`, undefined, hospital.accessToken, 403);
+    evidence.push('Admin and unassigned hospital cannot retrieve patient');
+    
+    const act = async (action, account, extra = {}) => c = await request(`/care/cases/${c.id}/actions`, { version: c.version, action, ...extra }, account.accessToken, 201);
+    await act('IMAGE', worker, { image, site: 'Right cheek', photographyConsent: true });
+    await act('AI_DEMO', worker, { researchConsent: true });
+    assert.equal(c.events.at(-1).data.score, null);
+    await act('SUBMIT', worker);
+    const d = await pageFor(doctor);
+    await d.getByRole('button', { name: new RegExp('^' + name + ' ') }).click();
+    await p.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await p.getByRole('button', { name: 'Join consultation', exact: true }).click();
+    await d.getByRole('button', { name: 'Join consultation', exact: true }).click();
+    await d.getByText('Connection: connected', { exact: true }).waitFor({timeout:30000});
+    await p.getByText('Connection: connected', { exact: true }).waitFor({timeout:30000});
+    assert(await d.locator('video[aria-label="Remote participant"]').evaluate(v => v.srcObject?.getVideoTracks().length > 0));
+    evidence.push('Two authenticated browser contexts exchanged WebRTC audio/video with synthetic media devices');
+    await d.screenshot({ path: 'output/verification/consultation.png', fullPage: true });
+    await p.getByRole('button', { name: 'End call', exact: true }).click(); await d.getByRole('button', { name: 'End call', exact: true }).click();
+    await act('REVIEW', doctor, { notes:'Independent simulated examination; research output deferred', decision:'URGENT_REFERRAL', aiAgreement:'DISAGREE', coordinatorId:hospital.user.id, hospital:'District Hospital Paderu' });
+    await act('CONSULTATION', doctor, { notes:'Two-party synthetic video consultation completed', outcome:'Specialist assessment' });
+    const appointment={ at:new Date(Date.now()+86400000).toISOString(), location:'District Hospital Paderu', specialty:'Oral medicine' };
+    await act('APPOINTMENT', hospital, appointment); await act('ATTENDANCE', hospital, { outcome:'MISSED', notes:'Transport unavailable' });
+    await act('FOLLOW_UP', worker, { at:appointment.at, notes:'Navigator arranged transport' });
+    await act('APPOINTMENT', hospital, appointment); await act('ATTENDANCE', hospital, { outcome:'ATTENDED', notes:'Patient arrived' });
+    await act('INVESTIGATION', doctor, { notes:'Simulated specialist biopsy order' });
+    for (const stage of ['SCHEDULED','SAMPLE_COLLECTED','REPORT_PENDING','RECEIVED']) await act('REPORT', hospital, { stage, notes:'Synthetic pathology report, demonstration only' });
+    await act('DIAGNOSIS', doctor, { notes:'Simulated clinician-reviewed result', treatment:'Treatment appointment linked' });
+    await act('FOLLOW_UP', worker, { at:appointment.at, notes:'Treatment attendance confirmed', completed:true });
+    assert.equal(c.status,'COMPLETED'); evidence.push('API journey: review, referral, missed visit, rebooking, biopsy, result, treatment, completion');
+    await act('PATIENT_ACCESS',worker,{notes:'pat_kondala'});
+    const patient=await login('pat_kondala','patient');
+    await request('/care/cases/'+offline.id,undefined,patient.accessToken,403);
+    const family=await pageFor(patient);await family.goto(url+'/patient/portal');
+    await family.getByRole('button',{name:new RegExp('^'+name+' ')}).waitFor();
+    evidence.push('Patient portal reads explicitly linked PostgreSQL case; unrelated case denied');
+    const stamp=Date.now().toString(), mobileNumber='9'+stamp.slice(-9), staffName='Synthetic staff '+stamp;
+    await request('/auth/register',{portalRole:'asha',fullName:staffName,mobileNumber,password:'SyntheticStaff@2026',confirmPassword:'SyntheticStaff@2026',ashaId:'TEST-'+stamp,assignedVillage:'Kothapalli'},undefined,201);
+    await request('/auth/login',{username:mobileNumber,password:'SyntheticStaff@2026',requestedRole:'asha'},undefined,403);
+    const adminPage=await pageFor(admin);await adminPage.goto(url+'/admin/users');
+    const staffCard=adminPage.locator('article').filter({hasText:staffName});
+    await staffCard.getByRole('button',{name:'APPROVE',exact:true}).click();
+    await staffCard.getByText(/APPROVED/).waitFor();
+    const staffSession=await request('/auth/login',{username:mobileNumber,password:'SyntheticStaff@2026',requestedRole:'asha'});
+    assert(staffSession.accessToken);
+    await staffCard.getByRole('button',{name:'SUSPEND',exact:true}).click();await staffCard.getByText(/SUSPENDED/).waitFor();
+    await request('/care/cases',undefined,staffSession.accessToken,403);
+    await adminPage.goto(url+'/admin/system');await adminPage.getByText('database: PostgreSQL',{exact:true}).waitFor();
+    evidence.push('Staff registration, pending denial, browser approval, sign-in, suspension and PostgreSQL system health verified');
+    const summary=await request('/care/summary',undefined,admin.accessToken); assert(summary.counts.COMPLETED >= 1); evidence.push('District aggregates updated');
+    const mobile = await pageFor(worker,{width:390,height:844});
+    await mobile.getByRole('button', { name: new RegExp('^' + name + ' ') }).click();
+    assert(await mobile.evaluate(()=>document.documentElement.scrollWidth <= innerWidth));
+    await mobile.screenshot({path:'output/verification/mobile-care.png',fullPage:true}); evidence.push('390px mobile layout has no horizontal overflow');
+    await p.reload(); await p.getByRole('button', { name: new RegExp('^' + name + ' ') }).click(); await p.getByText('COMPLETED',{exact:false}).first().waitFor();
+    evidence.push('Completed case survives browser reload');
+    await mobile.getByRole('button',{name:'తెలుగు',exact:true}).click();
+    await mobile.getByRole('heading',{name:'సమగ్ర ఆరోగ్య సేవలు',exact:true}).waitFor();
+    await mobile.screenshot({path:'output/verification/mobile-telugu.png'});
+    evidence.push('Telugu language switch displays connected workflow');
+    await request('/auth/logout',{},hospital.accessToken);
+    await request('/care/cases',undefined,hospital.accessToken,401);
+    evidence.push('Logged-out access token is rejected');
+    const loginContext = await browser.newContext(); const loginPage = await loginContext.newPage();
+    loginPage.on('dialog', dialog => dialog.accept('123456'));
+    await loginPage.goto(url + '/login');
+    await loginPage.getByRole('button', { name: /Quick Evaluator Demo/ }).first().click();
+    await loginPage.waitForURL('**/care');
+    assert(await loginPage.evaluate(() => !!localStorage.getItem('aarogya_jwt_token')));
+    evidence.push('Browser sign-in and privileged demo verification complete through backend');
+    assert(!evidence.some(x=>x.startsWith('BROWSER ERROR')),evidence.join('\n'));
+    fs.writeFileSync('output/verification/e2e-results.json',JSON.stringify({passed:true,caseId:c.id,evidence},null,2)); console.log(evidence.join('\n'));
+  } finally { await browser.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});
