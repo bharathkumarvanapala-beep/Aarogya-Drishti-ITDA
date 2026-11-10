@@ -73,7 +73,7 @@ export const HomePage: React.FC = () => {
     <div className="space-y-24 pb-20">
       
       {/* ============================================================ */}
-      {/* SECTION B: HERO SECTION WITH INTRODUCTORY VIDEO PRESENTATION */}
+      {/* SECTION B: CLINICAL HERO SECTION */}
       {/* ============================================================ */}
       <section className="relative overflow-hidden pt-8 pb-16 sm:pt-14 sm:pb-24 bg-gradient-to-b from-white via-[#F7F8F5] to-[#E7F2EF]/30 border-b border-[#B6CFC4]/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
