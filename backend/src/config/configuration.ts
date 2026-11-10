@@ -42,9 +42,9 @@ export default (): AppConfig => ({
     url: process.env.DATABASE_URL || 'postgresql://aarogya:aarogya_secret@localhost:5432/aarogya_drishti_db?schema=public',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'dev_jwt_secret_key_aarogya_drishti_2026',
-    expiresIn: process.env.JWT_EXPIRES_IN || '8h',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_key_aarogya_drishti_2026',
+    secret: process.env.JWT_SECRET!,
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    refreshSecret: process.env.JWT_REFRESH_SECRET!,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
   redis: {

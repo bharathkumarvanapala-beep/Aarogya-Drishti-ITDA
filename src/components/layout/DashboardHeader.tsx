@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, LogOut, WifiOff, UserCheck, ChevronDown, CheckCircle2, RotateCw, HardDrive, ArrowLeft } from 'lucide-react';
+import { Menu, LogOut, WifiOff, UserCheck, ChevronDown, CheckCircle2, RotateCw, HardDrive, ArrowLeft, KeyRound } from 'lucide-react';
 import { LanguageSwitcher } from '../common/LanguageSwitcher';
 import { NotificationPanel } from './NotificationPanel';
 import { useAuth, useSync } from '../../context';
 import { useTranslation } from '../../i18n';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 
 export interface DashboardHeaderProps {
   onToggleSidebar?: () => void;
@@ -16,6 +17,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
   const { syncState, pendingCount } = useSync();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -176,6 +178,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
                     </Link>
 
                     <button
+                      type="button"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        setChangePasswordOpen(true);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-semibold text-ink hover:bg-forest-50 rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <KeyRound className="w-4 h-4 text-forest-700" />
+                      <span>{language === 'te' ? 'పాస్‌వర్డ్ మార్చండి' : 'Change Password'}</span>
+                    </button>
+
+                    <button
                       onClick={handleLogout}
                       className="w-full text-left px-3 py-2 text-xs font-semibold text-status-danger hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors"
                     >
@@ -191,6 +205,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
         </div>
 
       </div>
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </header>
   );
 };

@@ -1,3 +1,4 @@
+import { AccountController } from './account.controller';
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -24,17 +25,17 @@ import { VillageScopeGuard } from './guards/village-scope.guard';
         secret:
           config.get<string>('jwt.secret') ||
           process.env.JWT_SECRET ||
-          'dev_jwt_secret_key_aarogya_drishti_2026',
+          process.env.JWT_SECRET!,
         signOptions: {
           expiresIn:
             config.get<string>('jwt.expiresIn') ||
             process.env.JWT_EXPIRES_IN ||
-            '8h',
+            '15m',
         },
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AccountController],
   providers: [
     AuthService,
     PasswordService,

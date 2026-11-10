@@ -4,6 +4,7 @@ export interface RequestUser {
   id: string;
   username: string;
   role: string;
+  roles?: string[];
   facilityId?: string;
   assignedVillages?: string[];
   assignedVillageIds?: string[];

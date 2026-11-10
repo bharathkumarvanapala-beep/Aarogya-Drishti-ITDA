@@ -2,6 +2,7 @@ import { createContext } from 'react';
 import type { UserAccount, UserRole, AccountStatus } from '../types';
 
 export interface AuthContextType {
+  loading?: boolean;
   currentUser: UserAccount | null;
   role: UserRole | null;
   isAuthenticated: boolean;
@@ -10,7 +11,8 @@ export interface AuthContextType {
     role: UserRole,
     identifier: string,
     password?: string,
-  ) => Promise<{ success: boolean; error?: string; status?: AccountStatus }>;
+    remember?: boolean,
+  ) => Promise<{ success: boolean; error?: string; role?: UserRole; status?: AccountStatus }>;
   registerUser: (
     userData: Partial<UserAccount> & { role: UserRole; name: string },
   ) => Promise<{ success: boolean; user?: UserAccount; error?: string }>;
@@ -20,6 +22,12 @@ export interface AuthContextType {
   ) => Promise<{ success: boolean; message: string; resetToken?: string }>;
   resetPassword: (
     token: string,
+    newPass: string,
+    confirmPass: string,
+    mfaCode?: string,
+  ) => Promise<{ success: boolean; message?: string; error?: string }>;
+  changePassword: (
+    currentPass: string,
     newPass: string,
     confirmPass: string,
   ) => Promise<{ success: boolean; message?: string; error?: string }>;

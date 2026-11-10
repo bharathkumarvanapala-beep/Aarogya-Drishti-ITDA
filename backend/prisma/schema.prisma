@@ -57,6 +57,8 @@ model UserAccount {
   fullName              String                   @db.VarChar(128)
   phone                 String?                  @db.VarChar(20)
   isActive              Boolean                  @default(true)
+  mfaEnrollmentSecret   String? @db.VarChar(128)
+  mfaLastStep           BigInt?
   mfaEnabled            Boolean                  @default(false)
   mfaSecret             String?                  @db.VarChar(128)
   apmcRegNumber         String?                  @db.VarChar(64) // Andhra Pradesh Medical Council Reg #

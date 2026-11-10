@@ -1,4 +1,7 @@
 import React from 'react';
+import {dashboardFor} from '../../services/session';
+import { useTranslation } from '../../i18n';
+import { authCopy } from '../../i18n/auth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context';
 import { isUserAuthorizedForPortal } from '../../context/AuthProvider';
@@ -15,8 +18,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   portalName = 'Portal',
   children,
 }) => {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  const {language}=useTranslation();
+  if(loading)return <p role="status" className="p-8">{authCopy[language].loading}</p>;
 
   // 1. Unauthenticated users must log in first
   if (!isAuthenticated || !currentUser) {
@@ -34,7 +39,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // 2. Account status check (Suspended or rejected accounts cannot view portals)
-  if (currentUser.accountStatus === 'SUSPENDED' || currentUser.accountStatus === 'REJECTED') {
+  if (currentUser.accountStatus !== 'APPROVED') {
     return (
       <Navigate
         to="/login"
@@ -59,20 +64,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (!isAuthorized) {
     // Find the user's appropriate portal path to redirect them safely
-    let targetRedirect = '/login';
-    if (currentUser.role === 'doctor' || currentUser.role === 'specialist') {
-      targetRedirect = '/doctor';
-    } else if (currentUser.role === 'asha' || currentUser.role === 'health_worker') {
-      targetRedirect = '/health-worker';
-    } else if (currentUser.role === 'anm') {
-      targetRedirect = '/health-worker';
-    } else if (currentUser.role === 'hospital_coordinator') {
-      targetRedirect = '/hospital';
-    } else if (currentUser.role === 'admin') {
-      targetRedirect = '/admin';
-    } else if (currentUser.role === 'patient') {
-      targetRedirect = '/patient/portal';
-    }
+    const targetRedirect = dashboardFor(currentUser.role);
 
     return (
       <Navigate

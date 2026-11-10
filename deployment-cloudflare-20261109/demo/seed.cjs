@@ -1,9 +1,10 @@
 const path=require('node:path'); const root=path.resolve(__dirname,'../..'); const {PrismaClient}=require(root+'/backend/node_modules/@prisma/client'); const argon=require(root+'/backend/node_modules/argon2');
 module.exports=async()=>{const prisma=new PrismaClient();try{
+  if(process.env.CONFIRM_SYNTHETIC_SEED!=='yes'||!process.env.DEMO_SEED_PASSWORD||process.env.DEMO_SEED_PASSWORD.length<12)throw Error('Explicit synthetic seed confirmation and private password required');
   const {AuthService}=require(root+'/backend/dist/src/auth/auth.service'); const {PasswordService}=require(root+'/backend/dist/src/auth/password.service');
   const auth=new AuthService({}, {}, {}, new PasswordService()); const seen=new Set();
   const mandal=await prisma.mandal.upsert({where:{code:'GMAD'},update:{},create:{code:'GMAD',name:'G. Madugula',nameTe:'జి. మాడుగుల'}});
-  const hash=await argon.hash('Aarogya@2026');
+  const hash=await argon.hash(process.env.DEMO_SEED_PASSWORD);
   for(const p of auth.fallbackPersonas.values()) {
    if(seen.has(p.id))continue;seen.add(p.id);
    p.email=p.username+'@example.invalid'; p.fullName='Synthetic Demo '+p.role; p.phone=null;

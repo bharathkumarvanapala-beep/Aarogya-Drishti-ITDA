@@ -19,6 +19,12 @@ import { PortalLayout } from '../layouts/PortalLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { AssistedCareGuidePage } from '../features/patient/AssistedCareGuidePage';
 import { CareWorkflowPage } from '../features/care/CareWorkflowPage';
+import { DoctorTelemedicinePage } from '../features/doctor/DoctorTelemedicinePage';
+import { CareVideo } from '../features/doctor/CareVideo';
+import { PatientDashboard } from '../features/patient/PatientDashboard';
+import { HealthCardPreviewPage } from '../features/patient/HealthCardPreviewPage';
+import { CareJourneyTimelinePage } from '../features/patient/CareJourneyTimelinePage';
+import { CaregiverAccessPage } from '../features/patient/CaregiverAccessPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -42,6 +48,8 @@ export const AppRouter: React.FC = () => {
 
         {/* Role-Based Healthcare Portals with Layout */}
         <Route element={<PortalLayout />}>
+          <Route path="/specialist/*" element={<ProtectedRoute allowedRoles={['specialist']}><CareWorkflowPage /></ProtectedRoute>} />
+          <Route path="/navigator/*" element={<ProtectedRoute allowedRoles={['hospital_coordinator']}><CareWorkflowPage /></ProtectedRoute>} />
           <Route path="/care" element={<ProtectedRoute allowedRoles={['health_worker','asha','anm','doctor','specialist','hospital_coordinator','admin','patient']}><CareWorkflowPage /></ProtectedRoute>} />
           {/* Frontline Health Worker (ASHA & ANM) Protected Portal Routes */}
           <Route
@@ -170,7 +178,7 @@ export const AppRouter: React.FC = () => {
             path="/doctor/telemedicine"
             element={
               <ProtectedRoute allowedRoles={['doctor', 'specialist']} portalName="Doctor Clinical Portal">
-                <CareWorkflowPage />
+                <DoctorTelemedicinePage />
               </ProtectedRoute>
             }
           />
@@ -259,21 +267,23 @@ export const AppRouter: React.FC = () => {
             }
           />
 
-          {/* UNCHANGED PATIENT & FAMILY PORTAL ROUTES (PRESERVED IN FULL) */}
-          <Route path="/patient/portal" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CareWorkflowPage /></ProtectedRoute>} />
-          <Route path="/patient/card-preview" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CareWorkflowPage /></ProtectedRoute>} />
+          {/* CONNECTED PATIENT & FAMILY PORTAL ROUTES */}
+          <Route path="/patient" element={<Navigate to="/patient/portal" replace />} />
+          <Route path="/patient/portal" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><PatientDashboard /></ProtectedRoute>} />
+          <Route path="/patient/card-preview" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><HealthCardPreviewPage /></ProtectedRoute>} />
           <Route path="/patient/assisted-guide" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><AssistedCareGuidePage /></ProtectedRoute>} />
           <Route path="/patient/screenings" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CareWorkflowPage /></ProtectedRoute>} />
-          <Route path="/patient/journey" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CareWorkflowPage /></ProtectedRoute>} />
-          <Route path="/patient/caregiver" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CareWorkflowPage /></ProtectedRoute>} />
+          <Route path="/patient/journey" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CareJourneyTimelinePage /></ProtectedRoute>} />
+          <Route path="/patient/consultation" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><div className="max-w-4xl mx-auto p-4 space-y-4"><CareVideo caseId="case-asr-2026-0042" /></div></ProtectedRoute>} />
+          <Route path="/patient/caregiver" element={<ProtectedRoute allowedRoles={['patient']} portalName="Patient Portal"><CaregiverAccessPage /></ProtectedRoute>} />
         </Route>
 
         {/* Living Design System Showcase */}
         <Route path="/design-system" element={<DesignSystemPage />} />
 
         {/* In-Website Unit Test Runner & Verification Suite */}
-        <Route path="/unit-tests" element={<UnitTestsPage />} />
-        <Route path="/system-tests" element={<UnitTestsPage />} />
+        {import.meta.env.DEV && <Route path="/unit-tests" element={<UnitTestsPage />} />}
+        {import.meta.env.DEV && <Route path="/system-tests" element={<UnitTestsPage />} />}
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
