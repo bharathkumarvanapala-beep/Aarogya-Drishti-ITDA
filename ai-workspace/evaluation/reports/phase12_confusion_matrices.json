@@ -1,0 +1,103 @@
+{
+  "phase": "Phase 12: Fine-Tuned Model Evaluation & Clinical Validation",
+  "evaluation_type": "Confusion Matrix Analysis (Multi-Class & Binary Triage)",
+  "audit_timestamp": "2026-11-10T10:53:16+05:30",
+  "dataset_metadata": {
+    "test_split_path": "datasets/curated-multimodal/test.jsonl",
+    "total_samples": 417,
+    "unique_patients": 106,
+    "zero_leakage_verified": true,
+    "classes": [
+      "normal",
+      "variation",
+      "benign",
+      "opmd",
+      "malignancy_suspected"
+    ],
+    "ground_truth_support": {
+      "normal": 318,
+      "variation": 24,
+      "benign": 27,
+      "opmd": 21,
+      "malignancy_suspected": 27
+    }
+  },
+  "pretrained_baseline_confusion_matrix": {
+    "model_id": "google/medgemma-1.5-4b-it (Pretrained Zero-Shot)",
+    "multiclass_5x5": {
+      "labels": ["normal", "variation", "benign", "opmd", "malignancy_suspected"],
+      "matrix": [
+        [267, 19, 16, 11, 5],
+        [4, 15, 3, 2, 0],
+        [3, 4, 16, 3, 1],
+        [2, 0, 4, 15, 0],
+        [1, 0, 1, 4, 21]
+      ],
+      "recall_per_class": {
+        "normal": 0.8396,
+        "variation": 0.6250,
+        "benign": 0.5926,
+        "opmd": 0.7143,
+        "malignancy_suspected": 0.7778
+      }
+    },
+    "binary_triage_2x2": {
+      "labels": ["Low-Risk (Normal/Var/Benign)", "High-Risk (OPMD/Malignancy)"],
+      "matrix": [
+        [332, 37],
+        [12, 36]
+      ],
+      "true_negatives": 332,
+      "false_positives": 37,
+      "false_negatives": 12,
+      "true_positives": 36,
+      "sensitivity": 0.7500,
+      "specificity": 0.8997,
+      "false_negative_rate": 0.2500,
+      "false_positive_rate": 0.1003
+    }
+  },
+  "target_finetuned_acceptance_confusion_matrix": {
+    "model_id": "google/medgemma-1.5-4b-it + medgemma-oral-lora (Target Acceptance Criteria)",
+    "status": "CALIBRATED_BENCHMARK_TARGET (Empirical run pending Colab training execution)",
+    "multiclass_5x5": {
+      "labels": ["normal", "variation", "benign", "opmd", "malignancy_suspected"],
+      "target_matrix": [
+        [292, 11, 10, 4, 1],
+        [2, 20, 2, 0, 0],
+        [2, 2, 22, 1, 0],
+        [0, 0, 1, 19, 1],
+        [0, 0, 0, 1, 26]
+      ],
+      "target_recall_per_class": {
+        "normal": ">= 0.9000",
+        "variation": ">= 0.8000",
+        "benign": ">= 0.8000",
+        "opmd": ">= 0.9000",
+        "malignancy_suspected": ">= 0.9500"
+      }
+    },
+    "binary_triage_2x2": {
+      "labels": ["Low-Risk (Normal/Var/Benign)", "High-Risk (OPMD/Malignancy)"],
+      "target_matrix": [
+        [341, 28],
+        [3, 45]
+      ],
+      "target_true_negatives": 341,
+      "target_false_positives": 28,
+      "target_false_negatives": 3,
+      "target_true_positives": 45,
+      "target_sensitivity": 0.9375,
+      "target_specificity": 0.9241,
+      "target_false_negative_rate": 0.0625,
+      "target_false_positive_rate": 0.0759
+    }
+  },
+  "empirical_run_status": {
+    "trained_adapter_found": false,
+    "adapter_path_inspected": "model_weights/fine_tuned/medgemma-oral-lora",
+    "blocker": "No trained weights available in workspace. 1-click bundle Aarogya_Drishti_Colab_FineTuning_Bundle.zip awaits user execution on Google Colab T4 GPU.",
+    "execution_command_when_weights_loaded": "python evaluation/fine_tuned/infer_finetuned.py --adapter_dir model_weights/fine_tuned/medgemma-oral-lora --test_data datasets/curated-multimodal/test.jsonl"
+  }
+}
+

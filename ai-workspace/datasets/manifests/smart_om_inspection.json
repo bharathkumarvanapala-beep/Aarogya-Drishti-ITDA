@@ -1,0 +1,45 @@
+{
+  "dataset": "SMART-OM Figshare Dataset",
+  "totalImages": 7731,
+  "uniqueImages": 7568,
+  "duplicatesCount": 163,
+  "duplicates": [
+    "SMART-OM\\01. Normal\\02. Region annotation\\01. Dorsal tongue\\SMITA00074_R_DT.jpeg",
+    "SMART-OM\\01. Normal\\02. Region annotation\\02. Ventral tongue\\SMITA00194_R_AOM-L.jpeg",
+    "SMART-OM\\01. Normal\\02. Region annotation\\03. Left buccal mucosa\\SMITA00074_R_LB.jpeg",
+    "SMART-OM\\01. Normal\\02. Region annotation\\04. Right buccal mucosa\\SMITA00045_R_RB.JPG",
+    "SMART-OM\\01. Normal\\02. Region annotation\\06. Lower lip\\SMITA00074_R_LL.jpeg",
+    "SMART-OM\\01. Normal\\02. Region annotation\\06. Lower lip\\SMITA00167_R_LL2.jpeg",
+    "SMART-OM\\01. Normal\\02. Region annotation\\06. Lower lip\\SMITA00205_R_LINGUAL.jpeg",
+    "SMART-OM\\01. Normal\\02. Region annotation\\07. Upper arch\\SMITA00128_R_UA.jpeg",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00008_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00012_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00014_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00015_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00020_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00027-1_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00036_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00037_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00044_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00047_R_DT.JPG",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00061_R-DT.jpg",
+    "SMART-OM\\01. Normal\\03. Full annotation\\01. Dorsal tongue\\SMITA00063_R_DT.jpg"
+  ],
+  "corruptedCount": 0,
+  "corrupted": [],
+  "categoryCounts": {
+    "SMART-OM": 7731
+  },
+  "formats": {
+    "JPEG": 7649,
+    "MPO": 74,
+    "PNG": 8
+  },
+  "topDimensions": {
+    "502x519": 16,
+    "435x519": 14,
+    "465x519": 14,
+    "589x519": 12,
+    "455x519": 12
+  }
+}

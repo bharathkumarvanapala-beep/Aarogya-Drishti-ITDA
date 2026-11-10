@@ -1,0 +1,28 @@
+{
+  "service_name": "aarogya-medgemma-inference-service",
+  "version": "1.5.0",
+  "port": 8001,
+  "host": "0.0.0.0",
+  "model_config": {
+    "base_model": "google/medgemma-1.5-4b-it",
+    "adapter_path": "model_weights/fine_tuned/medgemma-oral-lora",
+    "torch_dtype": "bfloat16",
+    "quantization": "4bit",
+    "max_new_tokens": 300,
+    "temperature": 0.1,
+    "top_p": 0.95
+  },
+  "runtime_safety_rules": {
+    "enforce_null_diagnostic_score": true,
+    "prohibit_standalone_diagnosis": true,
+    "require_doctor_review_gate": true,
+    "mandatory_biopsy_notice": true,
+    "enable_quality_gating": true
+  },
+  "hardware_requirements": {
+    "min_vram_gb": 12,
+    "recommended_gpu": "NVIDIA T4 / L4 / A10G / RTX 4090",
+    "fallback_mode": "Clinical Decision-Support Rules Engine (No AI Failure)"
+  }
+}
+

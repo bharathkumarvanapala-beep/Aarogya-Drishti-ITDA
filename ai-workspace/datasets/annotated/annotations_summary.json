@@ -1,0 +1,15 @@
+{
+  "total_annotations_generated": 2791,
+  "confirmation_breakdown": {
+    "HISTOPATHOLOGICALLY_CONFIRMED": 322,
+    "CLINICALLY_VALIDATED": 2469
+  },
+  "missing_information_frequency": {
+    "exact_anatomical_subsite": 322,
+    "patient_tobacco_duration": 322,
+    "patient_age_sex": 322,
+    "biopsy_not_indicated_for_healthy_mucosa": 2324,
+    "longitudinal_dysplasia_grade_untracked": 125
+  },
+  "schema_compliance": "100% compliant with AarogyaDrishtiClinicalAnnotation JSON Schema"
+}

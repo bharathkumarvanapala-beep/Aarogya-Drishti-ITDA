@@ -33,3 +33,20 @@ deployment-cloudflare-20261109/preview-site/
 .vercel/
 backend/.env.*
 !backend/.env.example
+
+# AI Models, Checkpoints, and Large Datasets (Data Protection)
+*.bin
+*.safetensors
+*.pt
+*.h5
+*.zip
+*.tar.gz
+model_weights/
+checkpoints/
+ai-workspace/checkpoints/
+ai-workspace/model_weights/*.bin
+ai-workspace/model_weights/*.safetensors
+ai-workspace/model_weights/*.pt
+ai-workspace/datasets/raw/
+ai-workspace/datasets/processed/images/
+Aarogya_Drishti_Colab_FineTuning_Bundle.zip

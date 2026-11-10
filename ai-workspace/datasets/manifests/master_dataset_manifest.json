@@ -1,0 +1,51 @@
+{
+  "project": "Aarogya Drishti - MedGemma 1.5 4B AI Workspace",
+  "version": "1.0.0",
+  "created_at": "2026-11-09T17:15:00Z",
+  "total_original_photographs": 2791,
+  "total_unique_patient_cohorts": 678,
+  "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "contributing_sources": [
+    {
+      "name": "Mendeley Oral Images Dataset v2",
+      "images": 322,
+      "licence": "CC BY 4.0"
+    },
+    {
+      "name": "SMART-OM Figshare Dataset",
+      "images": 2469,
+      "licence": "CC BY 4.0"
+    }
+  ],
+  "category_distribution": {
+    "benign": 165,
+    "malignancy_suspected": 177,
+    "normal": 2145,
+    "variation": 179,
+    "opmd": 125
+  },
+  "patient_stratified_partitions": {
+    "train": {
+      "images": 1941,
+      "patients": 472,
+      "percentage": "69.5%"
+    },
+    "val": {
+      "images": 433,
+      "patients": 100,
+      "percentage": "15.5%"
+    },
+    "test": {
+      "images": 417,
+      "patients": 106,
+      "percentage": "15.0%"
+    }
+  },
+  "zero_patient_leakage_verified": true,
+  "corrupted_images": 0,
+  "clinical_safety_tags": {
+    "enforce_null_diagnostic_score": true,
+    "prohibit_standalone_diagnosis": true,
+    "mandatory_doctor_review_gate": true
+  }
+}

@@ -1,0 +1,29 @@
+name: medgemma-ai-workspace
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch>=2.2.0
+  - torchvision>=0.17.0
+  - pytorch-cuda=12.1
+  - numpy>=1.26.0,<2.0.0
+  - pandas>=2.2.0
+  - scikit-learn>=1.4.0
+  - pip:
+      - transformers>=4.49.0
+      - accelerate>=0.30.0
+      - datasets>=2.19.0
+      - peft>=0.11.0
+      - bitsandbytes>=0.43.0
+      - trl>=0.9.0
+      - huggingface_hub>=0.23.0
+      - opencv-python-headless>=4.9.0
+      - pillow>=10.3.0
+      - tensorboard>=2.16.0
+      - tqdm>=4.66.0
+      - pyyaml>=6.0.1
+

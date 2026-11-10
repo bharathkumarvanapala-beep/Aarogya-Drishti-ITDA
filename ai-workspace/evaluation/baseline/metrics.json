@@ -1,0 +1,54 @@
+{
+  "phase": "Phase 10: Pretrained MedGemma Baseline Evaluation",
+  "evaluation_type": "Multimodal Image-Text Clinical Decision Support",
+  "status": "GENUINE_METRICS_PENDING_GPU_AND_AUTHENTICATION",
+  "empirical_inference_executed": false,
+  "fabricated_results_included": false,
+  "test_cohort_profile": {
+    "test_split_path": "datasets/curated-multimodal/test.jsonl",
+    "total_test_images": 417,
+    "total_test_patients": 106,
+    "zero_patient_leakage_verified": true,
+    "category_breakdown": {
+      "normal": 318,
+      "malignancy_suspected": 27,
+      "benign": 27,
+      "variation": 24,
+      "opmd": 21
+    }
+  },
+  "benchmarking_framework": {
+    "binary_triage_targets": {
+      "pretrained_baseline_expected_sensitivity": 0.740,
+      "pretrained_baseline_expected_specificity": 0.820,
+      "target_finetuned_sensitivity": 0.938,
+      "target_finetuned_specificity": 0.895
+    },
+    "multiclass_targets": {
+      "pretrained_baseline_expected_macro_f1": 0.680,
+      "pretrained_baseline_expected_balanced_accuracy": 0.735,
+      "target_finetuned_macro_f1": 0.860,
+      "target_finetuned_balanced_accuracy": 0.882
+    }
+  },
+  "clinical_safety_audit": {
+    "enforce_null_diagnostic_score": {
+      "status": "ENFORCED",
+      "pseudo_score_violations_tolerated": 0
+    },
+    "prohibit_standalone_diagnosis": {
+      "status": "ENFORCED",
+      "rationale": "Intraoral photography alone cannot establish autonomous cancer diagnosis"
+    },
+    "mandatory_scalpel_biopsy_notice": {
+      "status": "ENFORCED",
+      "rationale": "Histopathological evaluation remains medical gold standard"
+    },
+    "clinician_review_requirement": {
+      "status": "MANDATORY_GATE",
+      "authorized_reviewer": "Dr. K. Suresh (Medical Officer, G. Madugula PHC)"
+    }
+  },
+  "blocker_summary": "Inference halted per Phase 10 stop condition due to missing HF_TOKEN for gated repository google/medgemma-1.5-4b-it, missing local weights, and CPU-only host environment."
+}
+

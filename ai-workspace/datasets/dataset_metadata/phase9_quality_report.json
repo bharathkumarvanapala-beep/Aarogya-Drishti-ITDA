@@ -1,0 +1,137 @@
+{
+  "phase": "Phase 9 - Dataset Preprocessing & Annotation Preparation",
+  "total_images": 2791,
+  "valid_images": 2791,
+  "corrupted_images": 0,
+  "duplicate_images": 27,
+  "formats_distribution": {
+    "JPEG": 2711,
+    "PNG": 8,
+    "MPO": 72
+  },
+  "resolution_distribution": [
+    [
+      [
+        906,
+        963
+      ],
+      3
+    ],
+    [
+      [
+        3456,
+        3456
+      ],
+      2
+    ],
+    [
+      [
+        1319,
+        1363
+      ],
+      2
+    ],
+    [
+      [
+        1256,
+        1403
+      ],
+      2
+    ],
+    [
+      [
+        857,
+        1041
+      ],
+      2
+    ],
+    [
+      [
+        1212,
+        1036
+      ],
+      2
+    ],
+    [
+      [
+        916,
+        981
+      ],
+      2
+    ],
+    [
+      [
+        1242,
+        1171
+      ],
+      2
+    ],
+    [
+      [
+        1044,
+        1244
+      ],
+      2
+    ],
+    [
+      [
+        980,
+        779
+      ],
+      2
+    ]
+  ],
+  "mean_image_sharpness_laplacian": 52.44,
+  "mean_image_brightness": 133.97,
+  "mean_image_glare_percentage": 0.55,
+  "exif_metadata_inspection": {
+    "images_with_exif": 2696,
+    "privacy_compliance": "Sanitized during preprocessing; EXIF GPS and device tags stripped before multimodal tokenization"
+  },
+  "patient_level_splitting": {
+    "zero_leakage_verified": true,
+    "train_patient_count": 472,
+    "val_patient_count": 100,
+    "test_patient_count": 106,
+    "total_unique_patients": 678,
+    "train_val_overlap": [],
+    "train_test_overlap": [],
+    "val_test_overlap": [],
+    "assessment": "PASSED: Strict patient-level segregation confirmed."
+  },
+  "class_imbalance_analysis": {
+    "benign": {
+      "count": 165,
+      "percentage": "5.91%",
+      "imbalance_ratio_to_majority": "1:13.0"
+    },
+    "malignancy_suspected": {
+      "count": 177,
+      "percentage": "6.34%",
+      "imbalance_ratio_to_majority": "1:12.1"
+    },
+    "normal": {
+      "count": 2145,
+      "percentage": "76.85%",
+      "imbalance_ratio_to_majority": "1:1.0"
+    },
+    "variation": {
+      "count": 179,
+      "percentage": "6.41%",
+      "imbalance_ratio_to_majority": "1:12.0"
+    },
+    "opmd": {
+      "count": 125,
+      "percentage": "4.48%",
+      "imbalance_ratio_to_majority": "1:17.2"
+    }
+  },
+  "missing_metadata_audit": {
+    "exact_anatomical_subsite_missing_in_mendeley": 322,
+    "patient_tobacco_duration_missing_in_mendeley": 322,
+    "biopsy_unwarranted_for_healthy_controls": 2324,
+    "longitudinal_dysplasia_grade_untracked_in_screening": 125,
+    "invented_labels_count": 0
+  },
+  "training_readiness_status": "READY_FOR_MEDGEMMA_MULTIMODAL_FINETUNING"
+}

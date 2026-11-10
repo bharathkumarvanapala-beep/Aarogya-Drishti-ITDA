@@ -1,0 +1,9 @@
+{
+  "algorithm": "Deterministic Laplacian Variance + Illumination Histogram",
+  "blur_threshold": 80.0,
+  "brightness_min": 40.0,
+  "brightness_max": 220.0,
+  "contrast_threshold": 30.0,
+  "resolution_min": [640, 480],
+  "rejection_action": "Request Recapture Under Daylight Flash"
+}

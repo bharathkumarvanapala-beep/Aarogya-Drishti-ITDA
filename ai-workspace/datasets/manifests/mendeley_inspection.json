@@ -1,0 +1,22 @@
+{
+  "dataset": "Mendeley Oral Images Dataset v2",
+  "totalImages": 2593,
+  "uniqueImages": 2593,
+  "duplicatesCount": 0,
+  "duplicates": [],
+  "corruptedCount": 0,
+  "corrupted": [],
+  "categoryCounts": {
+    "Oral Images Dataset": 2593
+  },
+  "formats": {
+    "JPEG": 2593
+  },
+  "topDimensions": {
+    "304x304": 2270,
+    "3456x3456": 2,
+    "918x584": 1,
+    "433x527": 1,
+    "2387x2995": 1
+  }
+}

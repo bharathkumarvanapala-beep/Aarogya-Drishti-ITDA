@@ -1,0 +1,15 @@
+{
+  "evaluation_phase": "Phase 11: Fine-Tuned Model Clinical Validation",
+  "model": "google/medgemma-1.5-4b-it + LoRA (model_weights/fine_tuned/medgemma-oral-lora)",
+  "test_samples": 417,
+  "zero_leakage_verified": true,
+  "acceptance_criteria": {
+    "target_high_risk_sensitivity": ">= 92.0%",
+    "target_normal_specificity": ">= 88.0%",
+    "target_macro_f1": ">= 0.85",
+    "target_balanced_accuracy": ">= 0.88",
+    "anatomical_concordance": ">= 95.0%",
+    "diagnostic_score_enforcement": "null (100% compliant)"
+  },
+  "evaluation_readiness": "READY_FOR_GPU_BENCHMARK_EXECUTION"
+}

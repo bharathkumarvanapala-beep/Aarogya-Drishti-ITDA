@@ -1,0 +1,46 @@
+{
+  "phase": "Phase 10: Pretrained MedGemma Baseline Evaluation",
+  "target_model": "google/medgemma-1.5-4b-it",
+  "inference_timestamp": "2026-11-09T17:42:00Z",
+  "execution_status": "BLOCKED_GENUINE_INFERENCE_UNAVAILABLE",
+  "genuine_inference_executed": false,
+  "samples_evaluated": 0,
+  "simulations_or_fallbacks_used": false,
+  "fabrication_prohibition_adhered": true,
+  "hardware_environment": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "architecture": "AMD64",
+    "cuda_available": false,
+    "gpu_count": 0,
+    "gpu_device_name": null,
+    "total_physical_ram_gb": 15.75,
+    "available_physical_ram_gb": 2.63,
+    "pytorch_version": "2.15.0+cpu",
+    "transformers_version": "5.22.2"
+  },
+  "blockers": [
+    {
+      "code": "HF_GATED_REPO_401_UNAUTHORIZED",
+      "severity": "CRITICAL",
+      "description": "Model repository google/medgemma-1.5-4b-it is gated under Google Health AI Developer Foundations (HAI-DEF) Terms of Use. HTTP 401 Client Error returned: Access is restricted; missing HF_TOKEN authentication."
+    },
+    {
+      "code": "LOCAL_WEIGHTS_NOT_FOUND",
+      "severity": "CRITICAL",
+      "description": "Directory model_weights/pretrained/ is empty (0 bytes). Hugging Face local cache contains only a 40-byte commit ref (refs/main) with no parameter weight snapshots."
+    },
+    {
+      "code": "HARDWARE_COMPUTE_UNSUPPORTED",
+      "severity": "CRITICAL",
+      "description": "Host machine possesses no NVIDIA discrete GPU (CUDA acceleration unavailable). PyTorch is configured for CPU-only execution."
+    },
+    {
+      "code": "INSUFFICIENT_HOST_RAM_FOR_4B_CPU",
+      "severity": "HIGH",
+      "description": "Available host system RAM at execution time was 2.63 GB. Loading a 4.2-billion parameter model on CPU requires >= 8.5 GB (BF16) or >= 17 GB (FP32), which would trigger an out-of-memory kernel fault."
+    }
+  ],
+  "evaluated_records": [],
+  "recommendation": "Transition evaluation to Google Colab T4/L4 GPU environment with an authenticated HF_TOKEN accepting the HAI-DEF terms."
+}
+

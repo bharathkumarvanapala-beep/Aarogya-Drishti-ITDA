@@ -1,0 +1,28 @@
+{
+  "dataset_name": "Mendeley Oral Images Dataset v2",
+  "official_source": "https://data.mendeley.com/datasets/mhjyrn35p4/2",
+  "doi": "10.17632/mhjyrn35p4.2",
+  "publisher": "Mendeley Data, Elsevier",
+  "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "permitted_use": "Academic, commercial, and clinical AI research with attribution",
+  "total_source_files_in_archive": 2593,
+  "augmented_images_excluded": 2270,
+  "original_patient_images_retained": 322,
+  "unique_patient_cohorts": 322,
+  "categories": {
+    "benign": 165,
+    "malignancy_suspected": 157
+  },
+  "clinical_provenance": "Biopsy-confirmed oral lesions from tertiary dental hospital",
+  "image_resolution_range": "304x304 to 3456x3456 JPEG",
+  "data_quality_audit": {
+    "corrupted_files": 0,
+    "hash_collisions_in_retained": 0,
+    "synthetic_leakage_prevented": true
+  },
+  "limitations": [
+    "Lacks detailed patient tobacco/habit duration metadata",
+    "Individual filenames do not contain longitudinal follow-up tags",
+    "Synthetic augmented copies must be excluded from validation/test sets"
+  ]
+}

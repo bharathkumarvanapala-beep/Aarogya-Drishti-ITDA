@@ -1,0 +1,25 @@
+services:
+  medgemma-inference:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    container_name: aarogya-medgemma-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+

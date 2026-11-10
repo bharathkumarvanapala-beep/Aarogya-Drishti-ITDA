@@ -1,0 +1,26 @@
+{
+  "export_utility": "Aarogya Drishti MedGemma Exporter v1.0",
+  "base_model": "google/medgemma-1.5-4b-it",
+  "adapter_directory": "model_weights/fine_tuned/medgemma-oral-lora",
+  "target_output_directory": "model_weights/fine_tuned/medgemma-1.5-4b-oral-merged",
+  "merge_requested": false,
+  "adapter_validation": {
+    "valid": false,
+    "has_adapter_config": false,
+    "has_adapter_weights": false,
+    "adapter_files": [
+      "README.md"
+    ],
+    "base_model_name_or_path": null,
+    "peft_type": "LORA",
+    "r": null,
+    "lora_alpha": null,
+    "target_modules": null
+  },
+  "serving_compatibility": {
+    "peft_standalone": true,
+    "vllm_supported": true,
+    "fastapi_integration": true,
+    "huggingface_pipeline": true
+  }
+}

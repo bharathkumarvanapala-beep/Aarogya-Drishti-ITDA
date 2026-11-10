@@ -1,0 +1,70 @@
+{
+  "model_config": {
+    "base_model_id": "google/medgemma-1.5-4b-it",
+    "model_type": "multimodal_vision_language",
+    "architecture": "Gemma-3 / SigLIP Vision Encoder",
+    "parameters": "4.2B",
+    "torch_dtype": "bfloat16",
+    "device_map": "auto",
+    "attn_implementation": "eager"
+  },
+  "quantization_config": {
+    "load_in_4bit": true,
+    "bnb_4bit_quant_type": "nf4",
+    "bnb_4bit_use_double_quant": true,
+    "bnb_4bit_compute_dtype": "bfloat16"
+  },
+  "lora_config": {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "bias": "none",
+    "task_type": "CAUSAL_LM",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "training_hyperparameters": {
+    "output_dir": "checkpoints/medgemma-oral-qlora",
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 2,
+    "per_device_eval_batch_size": 2,
+    "gradient_accumulation_steps": 8,
+    "effective_batch_size": 16,
+    "learning_rate": 0.0002,
+    "lr_scheduler_type": "cosine",
+    "warmup_ratio": 0.03,
+    "weight_decay": 0.01,
+    "max_grad_norm": 0.3,
+    "logging_steps": 10,
+    "save_strategy": "epoch",
+    "evaluation_strategy": "epoch",
+    "save_total_limit": 2,
+    "load_best_model_at_end": true,
+    "metric_for_best_model": "eval_loss",
+    "greater_is_better": false,
+    "fp16": false,
+    "bf16": true,
+    "gradient_checkpointing": true,
+    "dataloader_num_workers": 2,
+    "report_to": "tensorboard"
+  },
+  "multimodal_processor_config": {
+    "image_size": [448, 448],
+    "max_sequence_length": 1024,
+    "chat_template": "gemma_multimodal"
+  },
+  "clinical_safeguards": {
+    "enforce_null_diagnostic_score": true,
+    "prohibit_standalone_diagnosis": true,
+    "require_doctor_review_gate": true,
+    "mandatory_biopsy_notice": true
+  }
+}
+

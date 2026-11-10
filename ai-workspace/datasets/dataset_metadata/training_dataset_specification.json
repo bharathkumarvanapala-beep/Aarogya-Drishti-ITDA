@@ -1,0 +1,59 @@
+{
+  "specification_name": "Aarogya Drishti MedGemma 1.5 4B Multimodal Dataset Specification",
+  "version": "1.0.0",
+  "target_model": "google/medgemma-1.5-4b-it",
+  "modality": "image-text-to-text",
+  "architecture": "Gemma-3 / SigLIP Multimodal Foundation Model",
+  "data_format": "JSONL (Conversational Multimodal Instruction Tuning)",
+  "dataset_splits": {
+    "train": {
+      "file_path": "datasets/curated-multimodal/train.jsonl",
+      "sample_count": 1941,
+      "patient_count": 472,
+      "stratification": "Patient-level stratified across 5 clinical categories"
+    },
+    "validation": {
+      "file_path": "datasets/curated-multimodal/val.jsonl",
+      "sample_count": 433,
+      "patient_count": 100,
+      "stratification": "Patient-level stratified across 5 clinical categories"
+    },
+    "test": {
+      "file_path": "datasets/curated-multimodal/test.jsonl",
+      "sample_count": 417,
+      "patient_count": 106,
+      "stratification": "Patient-level stratified across 5 clinical categories"
+    }
+  },
+  "input_preprocessing": {
+    "image_resolution": [448, 448],
+    "aspect_ratio_handling": "Aspect-preserving resize with black padding",
+    "contrast_enhancement": "Contrast Limited Adaptive Histogram Equalization (CLAHE) on LAB luminance channel",
+    "color_space": "RGB 8-bit per channel",
+    "normalization": "SigLIP standard vision normalization (mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])"
+  },
+  "prompt_token_schema": {
+    "user_message": {
+      "image_token": "<image>",
+      "clinical_instruction": "Analyze this oral photograph for mucosal abnormalities, anatomical landmarks, and signs of Oral Potentially Malignant Disorders (OPMD) or malignancy. Provide a structured clinical assessment including: 1. Anatomical Location, 2. Observed Visual Characteristics, 3. Differential Considerations, 4. Level of Clinical Concern, and 5. Recommended Action."
+    },
+    "assistant_message_template": {
+      "sections": [
+        "1. Anatomical Location",
+        "2. Observed Visual Characteristics",
+        "3. Differential Considerations (ICD-10)",
+        "4. Level of Clinical Concern (Tier 1 vs Tier 3)",
+        "5. Recommended Action"
+      ]
+    }
+  },
+  "clinical_safety_guardrails": {
+    "enforce_null_diagnostic_score": true,
+    "prohibit_standalone_cancer_percentages": true,
+    "require_doctor_review_gate": true,
+    "mandatory_scalpel_biopsy_notice": true,
+    "zero_patient_leakage_guarantee": true
+  },
+  "readiness_status": "READY_FOR_EVALUATION_AND_QLORA_TRAINING"
+}
+

@@ -1,0 +1,38 @@
+{
+  "dataset_name": "SMART-OM: A Photographic Oral Mucosa Dataset",
+  "official_source": "https://doi.org/10.6084/m9.figshare.31341790",
+  "doi": "10.6084/m9.figshare.31341790",
+  "publisher": "Figshare / Mazumdar Shaw Medical Foundation & Manipal Academy of Higher Education",
+  "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "permitted_use": "Permitted for machine learning, clinical decision-support, and public dissemination with attribution",
+  "total_archive_files": 7731,
+  "task_duplicate_copies_resolved": 5262,
+  "unique_core_photographs_retained": 2469,
+  "unique_patient_cohorts": 356,
+  "categories": {
+    "normal": 2145,
+    "variation": 179,
+    "opmd": 125,
+    "malignancy_suspected": 20
+  },
+  "annotation_methodology": "Dual-expert consensus contouring with VGG Image Annotator (VIA) polygon annotations (1,058 JSON files)",
+  "clinical_provenance": "Community screening camps and outpatient dental clinics in southern India; patients clinically inspected and histopathologically correlated",
+  "metadata_attributes": [
+    "Patient age and biological sex (1,000 subjects in Patient_s Metadata.xlsx)",
+    "Tobacco chewing frequency and years of exposure",
+    "Smoking packs/day and reverse smoking history",
+    "Alcohol intake status",
+    "Anatomical subsite classification across 8 oral mucosal regions",
+    "VIA polygon coordinates for lesion boundaries"
+  ],
+  "image_resolution_range": "403x449 to 1920x1080 JPEG",
+  "data_quality_audit": {
+    "corrupted_files": 0,
+    "hash_collisions_resolved": 163,
+    "zero_leakage_stratification_verified": true
+  },
+  "limitations": [
+    "Significant class imbalance (2,145 normal cases vs 20 confirmed cancer cases in source cohort)",
+    "Multi-folder archive duplication required deduplication before training ingestion"
+  ]
+}

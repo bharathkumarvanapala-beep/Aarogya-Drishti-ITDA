@@ -1,0 +1,41 @@
+{
+  "total_original_images": 2791,
+  "total_patients": 678,
+  "splits": {
+    "train": {
+      "images": 1941,
+      "patients": 472,
+      "categories": {
+        "benign": 114,
+        "malignancy_suspected": 123,
+        "normal": 1488,
+        "variation": 131,
+        "opmd": 85
+      }
+    },
+    "val": {
+      "images": 433,
+      "patients": 100,
+      "categories": {
+        "benign": 24,
+        "malignancy_suspected": 27,
+        "normal": 339,
+        "variation": 24,
+        "opmd": 19
+      }
+    },
+    "test": {
+      "images": 417,
+      "patients": 106,
+      "categories": {
+        "benign": 27,
+        "malignancy_suspected": 27,
+        "normal": 318,
+        "variation": 24,
+        "opmd": 21
+      }
+    }
+  },
+  "zero_patient_leakage_verified": true,
+  "corrupted_images_detected": 0
+}

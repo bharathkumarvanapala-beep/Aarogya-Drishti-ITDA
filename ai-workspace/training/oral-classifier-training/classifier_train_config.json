@@ -1,0 +1,15 @@
+{
+  "target_architecture": "EfficientNet-B0",
+  "num_classes": 5,
+  "classes": ["benign", "malignancy_suspected", "normal", "opmd", "variation"],
+  "input_resolution": [224, 224],
+  "batch_size": 32,
+  "epochs": 25,
+  "loss_function": "CategoricalCrossEntropyWithLabelSmoothing",
+  "data_splits": {
+    "train_jsonl": "../../datasets/curated-multimodal/train.jsonl",
+    "val_jsonl": "../../datasets/curated-multimodal/val.jsonl",
+    "test_jsonl": "../../datasets/curated-multimodal/test.jsonl"
+  },
+  "metrics": ["macro_accuracy", "sensitivity", "specificity", "per_class_f1"]
+}

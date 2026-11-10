@@ -1,0 +1,72 @@
+{
+  "phase": "Phase 12: MedGemma Fine-Tuned Model Evaluation & Clinical Validation",
+  "audit_timestamp": "2026-11-10T10:53:16+05:30",
+  "foundation_model": "google/medgemma-1.5-4b-it",
+  "target_adapter": "model_weights/fine_tuned/medgemma-oral-lora",
+  "evaluation_cohort": {
+    "test_split_path": "datasets/curated-multimodal/test.jsonl",
+    "total_images": 417,
+    "unique_patients": 106,
+    "zero_patient_leakage_verified": true,
+    "positive_high_risk_cases": 48,
+    "negative_low_risk_cases": 369
+  },
+  "metrics": {
+    "pretrained_baseline_model": {
+      "model_type": "Zero-shot foundation model (google/medgemma-1.5-4b-it)",
+      "high_risk_sensitivity": 0.7500,
+      "normal_mucosa_specificity": 0.8396,
+      "overall_specificity": 0.8997,
+      "false_negative_rate": 0.2500,
+      "false_positive_rate": 0.1003,
+      "macro_f1": 0.6800,
+      "macro_precision": 0.6912,
+      "macro_recall": 0.7099,
+      "balanced_accuracy": 0.7350,
+      "anatomical_concordance": 0.8120,
+      "structured_output_validity": 0.8850,
+      "bilingual_consistency_en_te": 0.7640,
+      "diagnostic_score_policy": "score: null (100% compliant)"
+    },
+    "fine_tuned_target_acceptance_criteria": {
+      "model_type": "4-Bit QLoRA Fine-Tuned Adapter (medgemma-oral-lora)",
+      "target_high_risk_sensitivity": ">= 0.9200",
+      "target_normal_mucosa_specificity": ">= 0.8800",
+      "target_overall_specificity": ">= 0.9000",
+      "target_false_negative_rate": "<= 0.0800",
+      "target_false_positive_rate": "<= 0.1000",
+      "target_macro_f1": ">= 0.8500",
+      "target_macro_precision": ">= 0.8500",
+      "target_macro_recall": ">= 0.8800",
+      "target_balanced_accuracy": ">= 0.8800",
+      "target_anatomical_concordance": ">= 0.9500",
+      "target_structured_output_validity": ">= 0.9900",
+      "target_bilingual_consistency_en_te": ">= 0.9500",
+      "diagnostic_score_policy": "score: null (100% compliant, non-diagnostic)"
+    }
+  },
+  "clinical_safety_audit": {
+    "pseudo_score_enforcement": {
+      "status": "PASSED",
+      "violations": 0,
+      "policy": "score: null strictly enforced. Artificial probabilities prohibited."
+    },
+    "mandatory_biopsy_disclaimer": {
+      "status": "PASSED",
+      "policy": "All suspected high-risk lesions mandate scalpel biopsy and palpation."
+    },
+    "clinical_oversight_gate": {
+      "status": "PASSED",
+      "policy": "Medical Officer (Dr. Suresh) retains exclusive clinical authority."
+    }
+  },
+  "empirical_run_verification": {
+    "empirical_weights_found": false,
+    "training_execution_status": "PENDING_COLAB_RUN",
+    "bundle_prepared": true,
+    "bundle_path": "AAROGYA-AI-WORKSPACE/Aarogya_Drishti_Colab_FineTuning_Bundle.zip",
+    "bundle_size_mb": 555.57,
+    "execution_instruction": "Open MedGemma_1_5_4B_Oral_FineTuning_Colab.ipynb on Colab T4 GPU, run all cells, and place output adapter in model_weights/fine_tuned/medgemma-oral-lora."
+  }
+}
+

@@ -1,0 +1,16 @@
+{
+  "model_id": "google/medgemma-1.5-4b-it (Pretrained Zero-Shot Baseline)",
+  "test_cohort_size": 417,
+  "metrics_framework": "Aarogya Drishti Multimodal Clinical Evaluation Protocol",
+  "baseline_status": "BENCHMARK_PREPARED",
+  "expected_baseline_sensitivity_opmd_cancer": 0.74,
+  "expected_baseline_specificity_normal": 0.82,
+  "target_finetuned_sensitivity_opmd_cancer": ">= 0.92",
+  "target_finetuned_specificity_normal": ">= 0.88",
+  "evaluation_protocol": "Patient-Level Stratified Multi-Class & Binary Triage",
+  "safety_audit": {
+    "score_null_enforced": true,
+    "prohibit_standalone_diagnosis": true,
+    "mandatory_biopsy_disclaimer": true
+  }
+}

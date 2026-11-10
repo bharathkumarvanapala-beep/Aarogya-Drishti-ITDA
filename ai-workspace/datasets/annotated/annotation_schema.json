@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AarogyaDrishtiClinicalAnnotation",
+  "type": "object",
+  "required": [
+    "image_id",
+    "dataset_source",
+    "dataset_provided_label",
+    "category",
+    "label_provenance",
+    "diagnostic_confirmation_status",
+    "annotation_confidence",
+    "missing_information"
+  ],
+  "properties": {
+    "image_id": {
+      "type": "string"
+    },
+    "dataset_source": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "anatomical_site": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "visible_characteristics": {
+      "type": "string"
+    },
+    "dataset_provided_label": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "variation",
+        "benign",
+        "opmd",
+        "malignancy_suspected"
+      ]
+    },
+    "label_provenance": {
+      "type": "string"
+    },
+    "diagnostic_confirmation_status": {
+      "type": "string",
+      "enum": [
+        "HISTOPATHOLOGICALLY_CONFIRMED",
+        "CLINICALLY_VALIDATED",
+        "UNCONFIRMED_IMAGE_LEVEL"
+      ]
+    },
+    "clinical_history": {
+      "type": "object",
+      "properties": {
+        "age": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "sex": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tobacco_chewing": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "smoking": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "alcohol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symptoms_reported": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "annotation_confidence": {
+      "type": "string",
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW"
+      ]
+    },
+    "missing_information": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
