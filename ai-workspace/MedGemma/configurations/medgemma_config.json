@@ -1,0 +1,18 @@
+{
+  "model_id": "google/medgemma-1.5-4b-it",
+  "base_architecture": "Gemma-3/SigLIP Multimodal",
+  "parameters": "4B",
+  "license": "Health AI Developer Foundations (HAI-DEF)",
+  "precision": "bfloat16",
+  "max_new_tokens": 1024,
+  "temperature": 0.2,
+  "top_p": 0.95,
+  "triage_tiers": [
+    "Tier 1: Priority Oncology Referral (Within 7 Days)",
+    "Tier 2: Targeted Specialist Evaluation (Within 14 Days)",
+    "Tier 3: Routine Community Surveillance"
+  ],
+  "discrepancy_detection_enabled": true,
+  "reticle_scale_uncalibrated": true,
+  "dual_stage_exif_stripping": true
+}

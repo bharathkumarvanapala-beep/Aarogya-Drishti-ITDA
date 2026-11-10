@@ -1,9 +1,11 @@
 # MedGemma development integration
 
-The health-worker desktop and mobile menus link to `/health-worker/medgemma` below Guided Screening. The page is marked under development.
+The desktop and mobile health-worker menus include MedGemma AI below Guided Screening, marked under development.
 
-`ai-service/medgemma_service.py` and its original tests were imported from branch `b`, commit `6019960db9e77db7a6d6025978bfd83f1a552082`. This implementation uses deterministic heuristics; it does not load MedGemma weights. The local adapter explicitly reports `modelLoaded: false`. Use synthetic data only.
+Imported the inference service, trained classifier weights, and class metadata from branch b commit 7136dcb. This executes a MobileNet V3 oral classifier, not Google MedGemma 4B weights. The complete branch-b workstation includes image upload, OpenCV quality checks, bilingual reports, and the branch doctor-review report view. Inference remains research-only.
 
-Install `ai-service/requirements-demo.txt` into `.local/medgemma-venv`. Set the same private `AI_SERVICE_TOKEN` in the Python service and NestJS backend environments, and set backend `AI_RESEARCH_SERVICE_URL=http://127.0.0.1:8002` with `NODE_ENV=development`. Then run `powershell -File scripts/start-medgemma.ps1`. This starts the demo on loopback port 8002 and the existing quality service on 8001. Start the existing NestJS backend and Vite frontend normally. The page now uses the authenticated `/api/v1/medgemma` backend gateway. Hosted configuration is documented in `SEPARATE_HOSTING.md`.
+Install ai-service/requirements-demo.txt in .local/medgemma-venv. Configure the same AI_SERVICE_TOKEN for Python and NestJS, AI_RESEARCH_SERVICE_URL=http://127.0.0.1:8002 and NODE_ENV=development for NestJS. scripts/start-medgemma.ps1 starts the classifier API on 8002 and quality API on 8001. Start the backend and frontend using their existing commands. The authenticated /api/v1/medgemma gateway reports classifier readiness and preserves the complete quality/report response.
 
-Real model inference remains future work and requires model loading, authorized model weights, and validation. No patient records are written by this demo.
+Frontend and backend builds and the gateway tests were verified. Full Google MedGemma inference remains future work.
+
+The full branch-b MedGemma inference scripts and configuration are retained in ai-workspace/MedGemma. Frontend calls use the authenticated NestJS gateway. Uploads are limited to 10 MB with a dedicated 16 MB JSON limit for this endpoint.

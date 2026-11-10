@@ -13,7 +13,11 @@ import {
   User,
   ArrowRight,
   Video,
-  Hospital
+  Hospital,
+  Languages,
+  AlertTriangle,
+  Microscope,
+
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
@@ -364,44 +368,174 @@ export const DoctorCaseDetailPage: React.FC = () => {
           </Card>
 
           {/* ISOLATED NON-CLINICAL AI ADVISORY CARD */}
-          <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 shadow-sm space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-amber-800 shrink-0" />
-                <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
-                  Non-Clinical AI Demonstration Advisory
-                </h4>
+          {activeCase.aiDemoOutput?.medgemmaReport ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 shadow-sm space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-amber-800 shrink-0" />
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                      MedGemma 1.5 4B Clinical Advisory (HAI-DEF Gated)
+                    </h4>
+                    <span className="text-[10px] text-amber-900 block font-mono">
+                      google/medgemma-1.5-4b-it • Multimodal Non-Diagnostic
+                    </span>
+                  </div>
+                </div>
+                <Badge
+                  label={
+                    activeCase.aiDemoOutput.medgemmaReport.triageTier?.includes('Tier 1')
+                      ? 'TIER 1: HIGH PRIORITY'
+                      : 'TIER 3: ROUTINE'
+                  }
+                  variant={
+                    activeCase.aiDemoOutput.medgemmaReport.triageTier?.includes('Tier 1')
+                      ? 'warning'
+                      : 'success'
+                  }
+                  size="sm"
+                />
               </div>
-              <Badge
-                label={activeCase.aiDemoOutput.researchLabel === 'suspicious_example' ? 'RESEARCH: SUSPICIOUS' : 'RESEARCH: BENIGN'}
-                variant={activeCase.aiDemoOutput.researchLabel === 'suspicious_example' ? 'warning' : 'neutral'}
-                size="sm"
-              />
-            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
-              <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
-                <span className="text-[10px] text-ink-muted block">Architecture</span>
-                <span className="font-mono font-bold text-ink text-[11px]">mock-v1-eff-b0</span>
+              {/* Architecture & Guardrails Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block uppercase font-mono">Architecture</span>
+                  <span className="font-mono font-bold text-ink text-[11px] truncate block">MedGemma 1.5 4B</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block uppercase font-mono">Modality</span>
+                  <span className="font-mono font-bold text-ink text-[11px] truncate block">SigLIP / Gemma-3</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block uppercase font-mono">Diagnostic Score</span>
+                  <span className="font-mono font-bold text-amber-900 text-[11px] block">null (Prohibited)</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block uppercase font-mono">Doctor Review</span>
+                  <span className="font-mono font-bold text-forest-800 text-[11px] block">Mandatory Gate</span>
+                </div>
               </div>
-              <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
-                <span className="text-[10px] text-ink-muted block">Provider</span>
-                <span className="font-mono font-bold text-ink text-[11px]">mock (Research)</span>
+
+              {/* Anatomical Concordance Check */}
+              {activeCase.aiDemoOutput.medgemmaReport.visualEvidence && (
+                <div
+                  className={`p-2.5 rounded-lg border text-xs flex items-start gap-2 ${
+                    activeCase.aiDemoOutput.medgemmaReport.visualEvidence.hasDisagreement
+                      ? 'bg-amber-100/70 border-amber-300 text-amber-950'
+                      : 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+                  }`}
+                >
+                  {activeCase.aiDemoOutput.medgemmaReport.visualEvidence.hasDisagreement ? (
+                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[11px] block">
+                      Anatomical Concordance: {activeCase.aiDemoOutput.medgemmaReport.visualEvidence.anatomicalConcordance || 'Concordant'}
+                    </span>
+                    <p className="text-[11px] leading-relaxed opacity-90">
+                      {activeCase.aiDemoOutput.medgemmaReport.visualEvidence.discrepancyNotice ||
+                        'Visual photograph orientation aligns with reported oral examination site.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Bilingual MedGemma Assessment */}
+              <div className="p-3 rounded-lg bg-white/90 border border-amber-200 space-y-2 text-xs">
+                <div className="flex items-center gap-1.5 text-forest-900 font-bold">
+                  <Languages className="w-4 h-4 text-forest-800" />
+                  <span>Multimodal Clinical Observation (Bilingual)</span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="p-2 rounded bg-forest-50/60 border border-forest-200">
+                    <span className="text-[10px] font-mono text-ink-muted uppercase block font-semibold">English Summary</span>
+                    <p className="text-ink text-[11px] leading-relaxed">
+                      {activeCase.aiDemoOutput.medgemmaReport.basicClinicalAnswer?.plainAnswerEn}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded bg-forest-50/60 border border-forest-200 font-telugu">
+                    <span className="text-[10px] font-mono text-ink-muted uppercase block font-semibold font-sans">తెలుగు సారాంశం (Telugu)</span>
+                    <p className="text-ink text-[12px] leading-relaxed">
+                      {activeCase.aiDemoOutput.medgemmaReport.basicClinicalAnswer?.plainAnswerTe}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
-                <span className="text-[10px] text-ink-muted block">Score</span>
-                <span className="font-mono font-bold text-amber-900 text-[11px]">null (Prohibited)</span>
-              </div>
-              <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
-                <span className="text-[10px] text-ink-muted block">Clinical Reliance</span>
-                <span className="font-mono font-bold text-red-700 text-[11px]">Prohibited</span>
+
+              {/* ICD-10 Differential Considerations */}
+              {activeCase.aiDemoOutput.medgemmaReport.differentialReasoning &&
+                activeCase.aiDemoOutput.medgemmaReport.differentialReasoning.length > 0 && (
+                  <div className="p-2.5 rounded-lg bg-white/90 border border-amber-200 space-y-1.5 text-xs">
+                    <span className="text-[10px] font-mono font-bold text-amber-950 uppercase tracking-wider block">
+                      Differential Diagnoses to Evaluate (ICD-10)
+                    </span>
+                    <div className="space-y-1">
+                      {activeCase.aiDemoOutput.medgemmaReport.differentialReasoning.slice(0, 3).map((diff: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between gap-2 p-1.5 rounded bg-amber-50/50 border border-amber-200/60">
+                          <span className="font-semibold text-ink text-[11px] truncate">{diff.condition}</span>
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-forest-900 border border-forest-300 shrink-0">
+                            {diff.icd10}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Mandatory Biopsy & Clinical Separation Notice */}
+              <div className="p-2.5 rounded-lg bg-amber-100/80 border border-amber-300 text-xs text-amber-950 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                  <Microscope className="w-4 h-4 text-amber-800" />
+                  <span>Mandatory In-Person Palpation & Biopsy Requirement</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  MedGemma serves strictly as clinical decision-support and never diagnoses disease. Bimanual palpation for tissue induration, cervical lymph node staging, and confirmatory histopathological biopsy are mandatory before definitive diagnosis. Dr. K. Suresh retains full medical authority.
+                </p>
               </div>
             </div>
+          ) : (
+            <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 shadow-sm space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-amber-800 shrink-0" />
+                  <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                    Non-Clinical AI Demonstration Advisory
+                  </h4>
+                </div>
+                <Badge
+                  label={activeCase.aiDemoOutput.researchLabel === 'suspicious_example' ? 'RESEARCH: SUSPICIOUS' : 'RESEARCH: BENIGN'}
+                  variant={activeCase.aiDemoOutput.researchLabel === 'suspicious_example' ? 'warning' : 'neutral'}
+                  size="sm"
+                />
+              </div>
 
-            <p className="text-[11px] text-amber-900/90 leading-relaxed pt-1">
-              <strong>Clinical Guardrail:</strong> This research advisory was generated automatically by a test prototype. It does not constitute a medical diagnosis. The Medical Officer must independently assess all physical findings below.
-            </p>
-          </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block">Architecture</span>
+                  <span className="font-mono font-bold text-ink text-[11px]">mock-v1-eff-b0</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block">Provider</span>
+                  <span className="font-mono font-bold text-ink text-[11px]">mock (Research)</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block">Score</span>
+                  <span className="font-mono font-bold text-amber-900 text-[11px]">null (Prohibited)</span>
+                </div>
+                <div className="bg-white/80 p-2 rounded-lg border border-amber-200">
+                  <span className="text-[10px] text-ink-muted block">Clinical Reliance</span>
+                  <span className="font-mono font-bold text-red-700 text-[11px]">Prohibited</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-amber-900/90 leading-relaxed pt-1">
+                <strong>Clinical Guardrail:</strong> This research advisory was generated automatically by a test prototype. It does not constitute a medical diagnosis. The Medical Officer must independently assess all physical findings below.
+              </p>
+            </div>
+          )}
 
           {/* Risk Factors Checklist */}
           <Card padding="md" className="border-forest-200 bg-white space-y-2">
@@ -749,3 +883,4 @@ export const DoctorCaseDetailPage: React.FC = () => {
     </div>
   );
 };
+

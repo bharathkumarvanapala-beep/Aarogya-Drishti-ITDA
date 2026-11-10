@@ -6,7 +6,7 @@ export function serverRole(role:string):UserRole {
 export function dashboardFor(role:UserRole):string {return ({doctor:'/doctor',specialist:'/specialist',hospital_coordinator:'/navigator',admin:'/admin',patient:'/patient/portal'} as Partial<Record<UserRole,string>>)[role]||'/health-worker';}
 let renewal:Promise<boolean>|null=null;
 export async function apiRequest(path:string,body?:unknown,method?:string,retry=true,key?:string):Promise<any> {
- const options:RequestInit={method:method||(body===undefined?'GET':'POST'),credentials:'same-origin',headers:{...(key?{'X-Idempotency-Key':key}:{}),'Content-Type':'application/json','X-Session-Mode':'cookie','X-Remember-Me':localStorage.getItem('ad_remember')==='true'?'true':'false'},signal:AbortSignal.timeout(25000),...(body===undefined?{}:{body:JSON.stringify(body)})};
+ const options:RequestInit={method:method||(body===undefined?'GET':'POST'),credentials:'same-origin',headers:{...(key?{'X-Idempotency-Key':key}:{}),'Content-Type':'application/json','X-Session-Mode':'cookie','X-Remember-Me':localStorage.getItem('ad_remember')==='true'?'true':'false'},signal:AbortSignal.timeout(path === '/medgemma/analyze' ? 65000 : 25000),...(body===undefined?{}:{body:JSON.stringify(body)})};
  let response:Response;
  try{response=await fetch('/api/v1'+path,options);}catch{throw new Error('NETWORK_ERROR');}
  if(response.status===401 && retry && !path.startsWith('/auth/login') && !path.startsWith('/auth/mfa') && !path.startsWith('/auth/reset')) {

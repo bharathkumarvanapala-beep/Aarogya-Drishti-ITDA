@@ -1,0 +1,14 @@
+{
+  "architecture": "MobileNetV3-Small (Oral Mucosal Fine-Tuned)",
+  "classes": [
+    "normal",
+    "benign",
+    "variation",
+    "opmd",
+    "malignancy_suspected"
+  ],
+  "val_accuracy": 0.7628865979381443,
+  "trained_epochs": 2,
+  "timestamp": "2026-11-10T14:46:05Z",
+  "weights_path": "C:\\Users\\AI PC\\Documents\\aarogya\\Aarogya-Drishti-ITDA\\ai-service\\oral_classifier_best.pt"
+}

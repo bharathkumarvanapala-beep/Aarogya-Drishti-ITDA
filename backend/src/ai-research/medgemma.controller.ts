@@ -1,15 +1,16 @@
 import {Body, Controller, Get, Post, ServiceUnavailableException, UseGuards} from '@nestjs/common';
-import {Equals, IsInt, IsString, Max, MaxLength, Min} from 'class-validator';
+import {IsOptional, IsInt, IsString, Max, MaxLength, Min} from 'class-validator';
 import {Roles} from '../common/decorators/roles.decorator';
 import {JwtAuthGuard} from '../auth/guards/jwt-auth.guard';
 import {RolesGuard} from '../auth/guards/roles.guard';
 
 export class ResearchDemoDto {
- @IsString() @MaxLength(1800000) imageBase64: string;
+ @IsString() @MaxLength(15000000) imageBase64: string;
  @IsInt() @Min(0) @Max(120) age: number;
  @IsString() @MaxLength(200) site: string;
  @IsString() @MaxLength(4000) history: string;
- @Equals(true) syntheticOnly: boolean;
+ @IsOptional() @IsString() @MaxLength(200) patientName?: string;
+ @IsOptional() @IsString() @MaxLength(100) screeningId?: string;
 }
 
 @Controller('medgemma')
@@ -23,10 +24,10 @@ export class MedgemmaController {
   try {
    const url=new URL(origin.replace(/\/$/,'')+path);
    if(url.protocol!=='https:' && !(process.env.NODE_ENV==='development'&&['localhost','127.0.0.1'].includes(url.hostname)))throw Error('HTTPS required');
-   const response=await fetch(url,{method:body?'POST':'GET',redirect:'error',headers:{'Content-Type':'application/json','X-AI-Service-Token':token},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(20000)});
+   const response=await fetch(url,{method:body?'POST':'GET',redirect:'error',headers:{'Content-Type':'application/json','X-AI-Service-Token':token},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000)});
    if(!response.ok)throw Error('Upstream unavailable');
    const result=await response.json();
-   return {...result,mode:'rule-based-demo',modelLoaded:false,researchOnly:true};
+   return {...result,mode:'trained-oral-classifier',modelLoaded:result.modelLoaded === true,medgemmaLoaded:false,researchOnly:true};
   }catch{throw new ServiceUnavailableException('RESEARCH_DEMO_UNAVAILABLE');}
  }
  @Get('status') status(){return this.forward('/status');}

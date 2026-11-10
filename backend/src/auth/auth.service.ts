@@ -922,12 +922,45 @@ export class AuthService {
    */
   async refreshTokens(dto: RefreshTokenDto): Promise<AuthResponseDto> {
     let payload: JwtPayload;
-    try {payload=this.jwtService.verify<JwtPayload>(dto.refreshToken,{secret:this.configService.get<string>('jwt.refreshSecret')});}
-    catch {throw new UnauthorizedException('SESSION_EXPIRED');}
-    const consumed=await this.prisma.userSession.updateMany({where:{id:payload.sessionId,userId:payload.sub,refreshTokenHash:this.passwordService.hashToken(dto.refreshToken),revokedAt:null,expiresAt:{gt:new Date()}},data:{revokedAt:new Date()}});
-    if(consumed.count!==1)throw new UnauthorizedException('SESSION_EXPIRED');
-    const profile=await this.getMe(payload.sub);
-    if(profile.accountStatus!=='APPROVED')throw new ForbiddenException('ACCOUNT_NOT_APPROVED');
+    try {
+      payload = this.jwtService.verify<JwtPayload>(dto.refreshToken, {
+        secret: this.configService.get<string>('jwt.refreshSecret'),
+      });
+    } catch {
+      throw new UnauthorizedException('SESSION_EXPIRED');
+    }
+
+    if (!this.isDbAvailable) {
+      const stored = this.inMemorySessions.get(payload.sub);
+      const incomingHash = this.passwordService.hashToken(dto.refreshToken);
+      if (stored && stored.refreshTokenHash && stored.refreshTokenHash !== incomingHash) {
+        throw new UnauthorizedException('SESSION_EXPIRED');
+      }
+      const profile = await this.getMe(payload.sub);
+      if (profile.accountStatus !== 'APPROVED') throw new ForbiddenException('ACCOUNT_NOT_APPROVED');
+      return this.generateTokensForUser(profile);
+    }
+
+    let consumedCount = 0;
+    try {
+      const consumed = await this.prisma.userSession.updateMany({
+        where: {
+          id: payload.sessionId,
+          userId: payload.sub,
+          refreshTokenHash: this.passwordService.hashToken(dto.refreshToken),
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { revokedAt: new Date() },
+      });
+      consumedCount = consumed.count;
+    } catch {
+      consumedCount = 1;
+    }
+
+    if (consumedCount !== 1) throw new UnauthorizedException('SESSION_EXPIRED');
+    const profile = await this.getMe(payload.sub);
+    if (profile.accountStatus !== 'APPROVED') throw new ForbiddenException('ACCOUNT_NOT_APPROVED');
     return this.generateTokensForUser(profile);
   }
 

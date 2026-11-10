@@ -12,6 +12,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use('/api/v1/medgemma/analyze', json({ limit: '16mb' }));
   app.use(json({ limit: '2mb' }));
 
   const configService = app.get(ConfigService);
