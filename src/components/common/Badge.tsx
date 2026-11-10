@@ -1,7 +1,7 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-export type BadgeVariant = 'info' | 'warning' | 'success' | 'danger' | 'neutral' | 'forest';
+export type BadgeVariant = 'info' | 'warning' | 'success' | 'danger' | 'neutral' | 'forest' | 'default';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 export interface BadgeProps {
@@ -29,22 +29,24 @@ export const Badge: React.FC<BadgeProps> = ({
     lg: 'text-sm px-3.5 py-1.5 gap-2.5 font-semibold',
   };
 
-  const variantStyles = {
+  const variantStyles: Record<BadgeVariant, string> = {
     info: 'bg-blue-50 text-status-info border border-blue-200/80',
     warning: 'bg-amber-50 text-status-warning border border-amber-300/80',
     success: 'bg-emerald-50 text-status-success border border-emerald-200/80',
     danger: 'bg-red-50 text-status-danger border border-red-200/80',
     neutral: 'bg-slate-100 text-slate-700 border border-slate-200',
     forest: 'bg-forest-100 text-forest-900 border border-forest-200',
+    default: 'bg-slate-100 text-slate-700 border border-slate-200',
   };
 
-  const dotColors = {
+  const dotColors: Record<BadgeVariant, string> = {
     info: 'bg-status-info',
     warning: 'bg-status-warning',
     success: 'bg-status-success',
     danger: 'bg-status-danger',
     neutral: 'bg-slate-400',
     forest: 'bg-forest-800',
+    default: 'bg-slate-400',
   };
 
   return (

@@ -112,39 +112,7 @@ export const clearSyncQueue = async (): Promise<void> => {
   await db.clear('sync_queue');
 };
 
-// Seeding standard initial drafts if store is empty
+// Seeding initial drafts only when explicitly requested
 export const seedInitialDraftsIfEmpty = async (): Promise<void> => {
-  try {
-    const drafts = await getAllDrafts();
-    if (drafts.length === 0) {
-      await putDraft({
-        id: 'DRAFT-SCR-108',
-        type: 'Screening Record',
-        patientName: 'Kondala Rao (46M)',
-        habitation: 'Kothapalli',
-        savedAt: 'Today, 11:20 AM',
-        size: '4.2 MB (5 Photos)',
-        payload: {
-          patientId: 'ASR-PAT-2026-0842',
-          complaint: 'Right cheek leukoplakic plaque',
-          habits: '22-year gutkha',
-        },
-      });
-
-      await putDraft({
-        id: 'DRAFT-ENR-094',
-        type: 'Citizen Enrollment',
-        patientName: 'Subba Rao (38M)',
-        habitation: 'Solabham',
-        savedAt: 'Today, 10:45 AM',
-        size: '12 KB',
-        payload: {
-          village: 'Solabham',
-          verbalConsent: true,
-        },
-      });
-    }
-  } catch (err) {
-    console.warn('Seeding failed', err);
-  }
+  // Real clinical environment: do not auto-inject hardcoded drafts into operational queue.
 };

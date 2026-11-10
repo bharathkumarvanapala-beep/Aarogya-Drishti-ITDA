@@ -46,7 +46,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         // class-validator array formatting
         if (Array.isArray(resObj.message)) {
           errorCode = 'VALIDATION_ERROR';
-          errorMessage = 'Validation failed for one or more fields.';
+          errorMessage = resObj.message.join(' • ');
           errorDetails = resObj.message.map((msg: string) => {
             const firstSpace = msg.indexOf(' ');
             if (firstSpace > 0) {

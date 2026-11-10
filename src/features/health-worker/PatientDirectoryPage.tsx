@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Users, 
   Search, 
@@ -12,294 +12,171 @@ import {
   MapPin, 
   Activity,
   ArrowRight,
-  Filter
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { StatCard } from '../../components/common/StatCard';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
+import { Modal } from '../../components/common/Modal';
 import { useTranslation } from '../../i18n';
-import { 
-  ASR_DIVISIONS, 
-  getMandalsByDivision, 
-  getPanchayatsForMandal,
-  getVillagesForPanchayat,
-  getVillagesForMandal
-} from '../../data/asrMandals';
-import { getCustomPatients } from '../../services/clinicalDataService';
-
-interface VillagePatient {
-  id: string;
-  name: string;
-  nameTe: string;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  mandal: string;
-  gramPanchayat: string;
-  habitation: string;
-  cardSerial: string;
-  habit: string;
-  habitTe: string;
-  screeningStatus: 'SUSPICIOUS' | 'NORMAL' | 'UNDER_REVIEW' | 'PENDING';
-  lastScreened: string;
-  assignedAsha: string;
-}
-
-const VILLAGE_PATIENTS: VillagePatient[] = [
-  {
-    id: 'ASR-PAT-2026-0842',
-    name: 'Kondala Rao',
-    nameTe: 'కొండల రావు',
-    age: 46,
-    gender: 'male',
-    mandal: 'G. Madugula',
-    gramPanchayat: 'Kothapalli',
-    habitation: 'Kothapalli',
-    cardSerial: 'ASR-CRD-2026-0842',
-    habit: 'Gutkha / Chewing Tobacco (22 yrs)',
-    habitTe: 'గుట్కా / పొగాకు నమలడం (22 సం.)',
-    screeningStatus: 'SUSPICIOUS',
-    lastScreened: '28 Oct 2026',
-    assignedAsha: 'Lakshmi Devi',
-  },
-  {
-    id: 'ASR-PAT-2026-0843',
-    name: 'Somamma Pangi',
-    nameTe: 'సోమమ్మ పంగి',
-    age: 34,
-    gender: 'female',
-    mandal: 'G. Madugula',
-    gramPanchayat: 'Nurmathi',
-    habitation: 'Nurmati',
-    cardSerial: 'ASR-CRD-2026-0843',
-    habit: 'Non-tobacco user',
-    habitTe: 'పొగాకు అలవాటు లేదు',
-    screeningStatus: 'NORMAL',
-    lastScreened: '25 Oct 2026',
-    assignedAsha: 'Lakshmi Devi',
-  },
-  {
-    id: 'ASR-PAT-2026-0844',
-    name: 'Appala Swamy',
-    nameTe: 'అప్పల స్వామి',
-    age: 62,
-    gender: 'male',
-    mandal: 'G. Madugula',
-    gramPanchayat: 'Solabham',
-    habitation: 'Solabham',
-    cardSerial: 'ASR-CRD-2026-0844',
-    habit: 'Reverse Smoking (Chutta) 40 yrs',
-    habitTe: 'అడ్డా చుట్ట కాల్చడం (40 సం.)',
-    screeningStatus: 'SUSPICIOUS',
-    lastScreened: '22 Oct 2026',
-    assignedAsha: 'Lakshmi Devi',
-  },
-  {
-    id: 'ASR-PAT-2026-0845',
-    name: 'Pangi Parvathi',
-    nameTe: 'పంగి పార్వతి',
-    age: 28,
-    gender: 'female',
-    mandal: 'G. Madugula',
-    gramPanchayat: 'Kothapalli',
-    habitation: 'Kothapalli',
-    cardSerial: 'ASR-CRD-2026-0845',
-    habit: 'Occasional Betel Nut',
-    habitTe: 'అప్పుడప్పుడు తమలపాకు/వక్క',
-    screeningStatus: 'NORMAL',
-    lastScreened: '18 Oct 2026',
-    assignedAsha: 'Lakshmi Devi',
-  },
-  {
-    id: 'ASR-PAT-2026-0846',
-    name: 'Korra Ramu',
-    nameTe: 'కొర్ర రాము',
-    age: 51,
-    gender: 'male',
-    mandal: 'Paderu',
-    gramPanchayat: 'Minumuluru',
-    habitation: 'Minumuluru',
-    cardSerial: 'ASR-CRD-2026-0846',
-    habit: 'Bidi Smoking (30 yrs)',
-    habitTe: 'బీడీ కాల్చడం (30 సం.)',
-    screeningStatus: 'UNDER_REVIEW',
-    lastScreened: '29 Oct 2026',
-    assignedAsha: 'P. Sitamma',
-  },
-  {
-    id: 'ASR-PAT-2026-0847',
-    name: 'Chetti Venkata Rao',
-    nameTe: 'చెట్టి వెంకటరావు',
-    age: 39,
-    gender: 'male',
-    mandal: 'Araku Valley',
-    gramPanchayat: 'Padmapuram',
-    habitation: 'Padmapuram',
-    cardSerial: 'ASR-CRD-2026-0847',
-    habit: 'Khaini chewer (12 yrs)',
-    habitTe: 'ఖైనీ అలవాటు (12 సం.)',
-    screeningStatus: 'PENDING',
-    lastScreened: 'Never Screened',
-    assignedAsha: 'K. Mary',
-  },
-  {
-    id: 'ASR-PAT-2026-0848',
-    name: 'Madakam Somulu',
-    nameTe: 'మడకం సోములు',
-    age: 55,
-    gender: 'male',
-    mandal: 'Chintoor',
-    gramPanchayat: 'Mothe',
-    habitation: 'Mothe',
-    cardSerial: 'ASR-CRD-2026-0848',
-    habit: 'Chutta / Tobacco Leaf Chewing',
-    habitTe: 'చుట్ట / పొగాకు ఆకు నమలడం',
-    screeningStatus: 'SUSPICIOUS',
-    lastScreened: '30 Oct 2026',
-    assignedAsha: 'V. Parvathi',
-  },
-  {
-    id: 'ASR-PAT-2026-0849',
-    name: 'Karam Gangamma',
-    nameTe: 'కారం గంగమ్మ',
-    age: 48,
-    gender: 'female',
-    mandal: 'Rampachodavaram',
-    gramPanchayat: 'Bandapalli',
-    habitation: 'Bandapalli',
-    cardSerial: 'ASR-CRD-2026-0849',
-    habit: 'Betel Quid with Slaked Lime',
-    habitTe: 'సున్నం తాంబూలం నమలడం',
-    screeningStatus: 'NORMAL',
-    lastScreened: '27 Oct 2026',
-    assignedAsha: 'S. Ratnam',
-  },
-];
+import { useAuth, useSync } from '../../context';
+import { careApi, type CareRecord } from '../../services/careApi';
+import { ASR_DIVISIONS, getMandalsByDivision } from '../../data/asrMandals';
 
 export const PatientDirectoryPage: React.FC = () => {
   const { language } = useTranslation();
+  const { currentUser } = useAuth();
+  const { drafts } = useSync();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
+  const [cases, setCases] = useState<CareRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [mandalFilter, setMandalFilter] = useState('ALL');
-  const [panchayatFilter, setPanchayatFilter] = useState('ALL');
-  const [habitationFilter, setHabitationFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [villageFilter, setVillageFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('filter') === 'pending' ? 'REGISTERED' : 'ALL');
+  
+  // Patient details modal
+  const [selectedCase, setSelectedCase] = useState<CareRecord | null>(null);
+  // Digital card modal
+  const [cardCase, setCardCase] = useState<CareRecord | null>(null);
 
-  const availablePanchayats = mandalFilter !== 'ALL' ? getPanchayatsForMandal(mandalFilter) : [];
-  const availableVillages = 
-    panchayatFilter !== 'ALL'
-      ? getVillagesForPanchayat(panchayatFilter, mandalFilter)
-      : mandalFilter !== 'ALL'
-      ? getVillagesForMandal(mandalFilter)
-      : [];
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
 
-  const handleMandalFilterChange = (mandal: string) => {
-    setMandalFilter(mandal);
-    setPanchayatFilter('ALL');
-    setHabitationFilter('ALL');
+  const loadPatients = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const records = await careApi<CareRecord[]>('/cases');
+      setCases(records || []);
+    } catch (err: any) {
+      console.warn('Failed to load patient cases:', err);
+      setError(err?.message || 'Failed to fetch patients from clinical server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePanchayatFilterChange = (gp: string) => {
-    setPanchayatFilter(gp);
-    setHabitationFilter('ALL');
-  };
+  useEffect(() => {
+    void loadPatients();
+  }, []);
 
-  const customPatients = getCustomPatients();
-  const customVillagePatients: VillagePatient[] = customPatients.map((p) => {
-    const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.id;
-    const fullNameTe = `${p.firstNameTe || p.firstName || ''} ${p.lastNameTe || p.lastName || ''}`.trim() || fullName;
-    const cardId = (p.uniquePatientId || p.id).replace(/[^\d]/g, '').slice(-4) || '8420';
-    return {
-      id: p.uniquePatientId || p.id,
-      name: fullName,
-      nameTe: fullNameTe,
-      age: p.age || 30,
-      gender: (p.gender || 'male') as 'male' | 'female' | 'other',
-      mandal: p.mandal || 'G. Madugula',
-      gramPanchayat: p.gramPanchayat || p.mandal || 'G. Madugula',
-      habitation: p.village || 'Kothapalli',
-      cardSerial: `ASR-CRD-${cardId}`,
-      habit: p.contactPhone ? `Phone: ${p.contactPhone}` : 'Doorstep Registration',
-      habitTe: 'నమోదైన రోగి',
-      screeningStatus: 'PENDING' as const,
-      lastScreened: 'Just Registered',
-      assignedAsha: 'Lakshmi Devi (ASHA)',
-    };
-  });
+  // Merge server cases with any pending offline enrollment drafts so they appear immediately
+  const combinedList = [
+    ...cases,
+    ...drafts
+      .filter((d) => d.type === 'Citizen Enrollment' && d.payload)
+      .map((d) => {
+        const p = d.payload as any;
+        return {
+          id: d.id,
+          version: 1,
+          name: p.name || d.patientName || 'Offline Citizen',
+          age: Number(p.age) || 35,
+          sex: p.sex || 'Male',
+          village: p.village || d.habitation || 'Kothapalli',
+          mandal: p.mandal || 'G. Madugula',
+          history: p.history || 'Pending offline synchronization',
+          symptoms: p.symptoms || 'None recorded',
+          status: 'OFFLINE_DRAFT',
+          createdAt: new Date().toISOString(),
+          patientId: `DRAFT-${d.id.slice(0, 8)}`,
+          images: [],
+          events: [
+            {
+              id: d.id,
+              action: 'OFFLINE_SAVED',
+              actor: currentUser?.fullName || 'ASHA Worker',
+              at: new Date().toISOString(),
+              data: { note: 'Record stored securely in local device database' },
+            },
+          ],
+        } as CareRecord;
+      }),
+  ];
 
-  const allVillagePatients = [...customVillagePatients, ...VILLAGE_PATIENTS];
+  // Derived options
+  const uniqueVillages = Array.from(new Set(combinedList.map((c) => c.village).filter(Boolean)));
 
-  const filteredPatients = allVillagePatients.filter((p) => {
-    const matchesSearch = 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.nameTe.includes(searchQuery) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.cardSerial.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.mandal.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.gramPanchayat.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.habitation.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filtered
+  const filteredPatients = combinedList.filter((p) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      p.name?.toLowerCase().includes(q) ||
+      p.patientId?.toLowerCase().includes(q) ||
+      p.village?.toLowerCase().includes(q) ||
+      p.mandal?.toLowerCase().includes(q) ||
+      p.symptoms?.toLowerCase().includes(q);
 
     const matchesMandal = mandalFilter === 'ALL' || p.mandal === mandalFilter;
-    const matchesPanchayat = panchayatFilter === 'ALL' || p.gramPanchayat.toLowerCase() === panchayatFilter.toLowerCase();
-    const matchesHabitation = habitationFilter === 'ALL' || p.habitation === habitationFilter;
-    const matchesStatus = statusFilter === 'ALL' || p.screeningStatus === statusFilter;
+    const matchesVillage = villageFilter === 'ALL' || p.village?.toLowerCase() === villageFilter.toLowerCase();
+    
+    let matchesStatus = true;
+    if (statusFilter === 'REGISTERED') {
+      matchesStatus = ['REGISTERED', 'SCREENING_IN_PROGRESS', 'RECAPTURE'].includes(p.status);
+    } else if (statusFilter === 'SCREENED') {
+      matchesStatus = ['AWAITING_REVIEW', 'REVIEWED', 'SUBMITTED'].includes(p.status);
+    } else if (statusFilter === 'REFERRED') {
+      matchesStatus = ['REFERRED', 'APPOINTMENT', 'ATTENDED', 'INVESTIGATION', 'REPORT_RECEIVED'].includes(p.status);
+    } else if (statusFilter === 'FOLLOW_UP') {
+      matchesStatus = p.status === 'FOLLOW_UP_DUE' || p.events?.some((e) => e.action === 'FOLLOW_UP' && !e.data?.completed);
+    } else if (statusFilter === 'COMPLETED') {
+      matchesStatus = p.status === 'COMPLETED';
+    }
 
-    return matchesSearch && matchesMandal && matchesPanchayat && matchesHabitation && matchesStatus;
+    return matchesSearch && matchesMandal && matchesVillage && matchesStatus;
   });
 
-  const getStatusBadge = (status: VillagePatient['screeningStatus']) => {
+  const totalPages = Math.max(1, Math.ceil(filteredPatients.length / pageSize));
+  const paginatedPatients = filteredPatients.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Dynamic aggregates
+  const totalCount = combinedList.length;
+  const screenedCount = combinedList.filter((c) => c.status !== 'REGISTERED' && c.status !== 'OFFLINE_DRAFT').length;
+  const referredCount = combinedList.filter((c) => ['REFERRED', 'APPOINTMENT', 'INVESTIGATION', 'REPORT_RECEIVED'].includes(c.status)).length;
+  const pendingCount = combinedList.filter((c) => ['REGISTERED', 'SCREENING_IN_PROGRESS', 'RECAPTURE'].includes(c.status)).length;
+
+  const renderStatusBadge = (status: string) => {
     switch (status) {
-      case 'SUSPICIOUS':
-        return (
-          <Badge 
-            variant="danger" 
-            size="sm" 
-            icon={ShieldAlert}
-            label={language === 'te' ? 'అనుమానాస్పద మచ్చ' : 'Suspicious Lesion'}
-          />
-        );
-      case 'NORMAL':
-        return (
-          <Badge 
-            variant="success" 
-            size="sm" 
-            icon={CheckCircle2}
-            label={language === 'te' ? 'సాధారణం' : 'Normal Mucosa'}
-          />
-        );
-      case 'UNDER_REVIEW':
-        return (
-          <Badge 
-            variant="info" 
-            size="sm" 
-            icon={Clock}
-            label={language === 'te' ? 'వైద్యుల పరిశీలనలో' : 'Under MO Review'}
-          />
-        );
-      case 'PENDING':
-        return (
-          <Badge 
-            variant="warning" 
-            size="sm" 
-            icon={Activity}
-            label={language === 'te' ? 'స్క్రీనింగ్ పెండింగ్' : 'Screening Due'}
-          />
-        );
+      case 'OFFLINE_DRAFT':
+        return <Badge variant="warning" size="sm" icon={Clock} label={language === 'te' ? 'ఆఫ్‌లైన్ డ్రాఫ్ట్' : 'Offline Draft'} />;
+      case 'REGISTERED':
+      case 'SCREENING_IN_PROGRESS':
+        return <Badge variant="warning" size="sm" icon={Activity} label={language === 'te' ? 'స్క్రీనింగ్ పెండింగ్' : 'Screening Due'} />;
+      case 'AWAITING_REVIEW':
+        return <Badge variant="info" size="sm" icon={Clock} label={language === 'te' ? 'వైద్యుల పరిశీలనలో' : 'Under MO Review'} />;
+      case 'REFERRED':
+      case 'APPOINTMENT':
+      case 'INVESTIGATION':
+      case 'REPORT_RECEIVED':
+        return <Badge variant="danger" size="sm" icon={ShieldAlert} label={language === 'te' ? 'ఆసుపత్రి రిఫరల్' : 'Referred to Hospital'} />;
+      case 'COMPLETED':
+      case 'REVIEWED':
+        return <Badge variant="success" size="sm" icon={CheckCircle2} label={language === 'te' ? 'పూర్తయింది' : 'Reviewed & Safe'} />;
+      default:
+        return <Badge variant="default" size="sm" label={status} />;
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-forest-900 text-white font-mono">
               Frontline Directory
             </span>
             <span className="text-xs text-forest-800 bg-forest-100 px-2 py-0.5 rounded-full font-semibold">
-              G. Madugula Sub-Centre
+              {currentUser?.facilityName || currentUser?.assignedHealthCentre || 'G. Madugula Sub-Centre'}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-ink mt-1">
@@ -307,53 +184,54 @@ export const PatientDirectoryPage: React.FC = () => {
           </h1>
           <p className="text-xs sm:text-sm text-ink-muted">
             {language === 'te'
-              ? 'కొత్తపల్లి, నూర్మతి మరియు సొలభం ఆవాసాల రోగుల జాబితా మరియు హెల్త్ కార్డ్ వివరాలు.'
-              : 'Assigned habitation roster, physical health card credentials, and oral health statuses.'}
+              ? 'కేటాయించిన ఆవాసాల రోగుల జాబితా, డిజిటల్ హెల్త్ కార్డ్‌లు మరియు స్క్రీనింగ్ చరిత్ర.'
+              : 'Assigned tribal habitation roster, digital health credentials, and oral care status.'}
           </p>
         </div>
 
-        <Link to="/health-worker/register">
-          <Button variant="primary" size="md" icon={Plus}>
-            {language === 'te' ? 'కొత్త రోగి నమోదు' : 'Register New Patient'}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" icon={RefreshCw} onClick={loadPatients} disabled={loading}>
+            {loading ? (language === 'te' ? 'నవీకరిస్తోంది...' : 'Refreshing...') : (language === 'te' ? 'రిఫ్రెష్' : 'Refresh')}
           </Button>
-        </Link>
+          <Link to="/health-worker/register">
+            <Button variant="primary" size="md" icon={Plus}>
+              {language === 'te' ? 'కొత్త రోగి నమోదు' : 'Register New Patient'}
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Aggregate Stat Cards */}
+      {/* Aggregate Real Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total Registered"
           labelTe="మొత్తం నమోదైన రోగులు"
-          value="248"
-          subtext="Across 3 habitations"
-          subtextTe="3 ఆవాసాలలో"
+          value={loading ? '...' : String(totalCount)}
+          subtext={language === 'te' ? 'కేటాయించిన ఆవాసాలలో' : 'Across assigned villages'}
           variant="forest"
           icon={Users}
         />
         <StatCard
-          label="Screened This Month"
-          labelTe="ఈ నెల స్క్రీనింగ్"
-          value="182"
-          subtext="73.3% saturation"
-          subtextTe="73.3% పూర్తి"
+          label="Screenings Completed"
+          labelTe="పూర్తయిన స్క్రీనింగ్‌లు"
+          value={loading ? '...' : String(screenedCount)}
+          subtext={totalCount > 0 ? `${Math.round((screenedCount / totalCount) * 100)}% coverage` : '0%'}
           variant="emerald"
           icon={Activity}
         />
         <StatCard
-          label="High-Risk Habits"
-          labelTe="అధిక-ప్రమాద అలవాట్లు"
-          value="58"
-          subtext="Gutkha & Reverse smoking"
-          subtextTe="పొగాకు / చుట్ట వినియోగం"
+          label="Hospital Referrals"
+          labelTe="ఆసుపత్రి రిఫరల్స్"
+          value={loading ? '...' : String(referredCount)}
+          subtext={language === 'te' ? 'పాడేరు జిల్లా ఆసుపత్రికి' : 'DH Paderu Oncology OPD'}
           variant="amber"
           icon={ShieldAlert}
         />
         <StatCard
           label="Screenings Due"
           labelTe="పెండింగ్ స్క్రీనింగ్‌లు"
-          value="26"
-          subtext="Doorstep visits required"
-          subtextTe="ఈ వారం షెడ్యూల్"
+          value={loading ? '...' : String(pendingCount)}
+          subtext={language === 'te' ? 'ఇంటింటి పరీక్ష అవసరం' : 'Doorstep visits required'}
           variant="default"
           icon={Clock}
         />
@@ -366,174 +244,185 @@ export const PatientDirectoryPage: React.FC = () => {
             <Search className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder={language === 'te' ? 'పేరు, రోగి సంఖ్య లేదా కార్డ్ ద్వారా వెతకండి...' : 'Search by name, patient ID, or card serial...'}
+              placeholder={language === 'te' ? 'పేరు, రోగి సంఖ్య లేదా గ్రామం ద్వారా వెతకండి...' : 'Search by patient name, ID, village, or symptoms...'}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-forest-600 focus:border-forest-600 bg-white"
             />
           </div>
 
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {/* Mandal Filter Dropdown */}
+            {/* Mandal Filter */}
             <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
               <MapPin className="w-3.5 h-3.5 text-forest-700" />
               <select
                 value={mandalFilter}
-                onChange={(e) => handleMandalFilterChange(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-ink focus:outline-none max-w-[160px] truncate"
+                onChange={(e) => {
+                  setMandalFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-semibold text-ink focus:outline-none max-w-[150px] truncate"
               >
-                <option value="ALL">{language === 'te' ? 'అన్ని 22 మండలాలు' : 'All 22 Mandals'}</option>
-                {ASR_DIVISIONS.map((div) => {
-                  const divMandals = getMandalsByDivision(div.id);
-                  return (
-                    <optgroup key={div.id} label={`${div.nameEn} (${div.nameTe})`}>
-                      {divMandals.map((m) => (
-                        <option key={m.id} value={m.nameEn}>
-                          {m.nameEn} ({m.nameTe})
-                        </option>
-                      ))}
-                    </optgroup>
-                  );
-                })}
+                <option value="ALL">{language === 'te' ? 'అన్ని మండలాలు' : 'All Mandals'}</option>
+                {ASR_DIVISIONS.flatMap((d) => getMandalsByDivision(d.id)).map((m) => (
+                  <option key={m.id} value={m.nameEn}>
+                    {m.nameEn} ({m.nameTe})
+                  </option>
+                ))}
               </select>
             </div>
 
-            {/* Gram Panchayat Filter Dropdown */}
-            {mandalFilter !== 'ALL' && availablePanchayats.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-forest-50/80 px-3 py-1.5 rounded-xl border border-forest-200 animate-fadeIn">
-                <span className="text-[10px] font-bold text-forest-800">GP:</span>
-                <select
-                  value={panchayatFilter}
-                  onChange={(e) => handlePanchayatFilterChange(e.target.value)}
-                  className="bg-transparent text-xs font-semibold text-ink focus:outline-none max-w-[170px] truncate"
-                >
-                  <option value="ALL">All {availablePanchayats.length} GPs ({mandalFilter})</option>
-                  {availablePanchayats.map((gp, idx) => (
-                    <option key={gp.nameEn} value={gp.nameEn}>
-                      {idx + 1}. {gp.nameEn} GP ({gp.nameTe})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Habitation / Village Filter Dropdown */}
+            {/* Village Filter */}
             <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-              <MapPin className="w-3.5 h-3.5 text-forest-700" />
+              <span className="text-[10px] font-bold text-forest-800">Vil:</span>
               <select
-                value={habitationFilter}
-                onChange={(e) => setHabitationFilter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-ink focus:outline-none max-w-[170px] truncate"
+                value={villageFilter}
+                onChange={(e) => {
+                  setVillageFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-semibold text-ink focus:outline-none max-w-[150px] truncate"
               >
-                <option value="ALL">
-                  {availableVillages.length > 0 
-                    ? `All ${availableVillages.length} Villages` 
-                    : language === 'te' ? 'అన్ని ఆవాసాలు' : 'All Villages'}
-                </option>
-                {availableVillages.length > 0 ? (
-                  availableVillages.map((v) => (
-                    <option key={v.nameEn} value={v.nameEn}>
-                      {v.nameEn} ({v.nameTe})
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="Kothapalli">Kothapalli (కొత్తపల్లి)</option>
-                    <option value="Nurmathi">Nurmathi (నూర్మతి)</option>
-                    <option value="Solabham">Solabham (సొలభం)</option>
-                    <option value="Minumuluru">Minumuluru (మినుములూరు)</option>
-                    <option value="Padmapuram">Padmapuram (పద్మాపురం)</option>
-                    <option value="Bandapalli">Bandapalli (బండపల్లి)</option>
-                  </>
-                )}
+                <option value="ALL">{language === 'te' ? 'అన్ని గ్రామాలు' : 'All Villages'}</option>
+                {uniqueVillages.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
               </select>
             </div>
 
+            {/* Status Filter */}
             <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
               <Filter className="w-3.5 h-3.5 text-forest-700" />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="bg-transparent text-xs font-semibold text-ink focus:outline-none"
               >
                 <option value="ALL">{language === 'te' ? 'అన్ని కేటగిరీలు' : 'All Statuses'}</option>
-                <option value="SUSPICIOUS">{language === 'te' ? 'అనుమానాస్పద' : 'Suspicious Lesion'}</option>
-                <option value="NORMAL">{language === 'te' ? 'సాధారణం' : 'Normal Mucosa'}</option>
-                <option value="UNDER_REVIEW">{language === 'te' ? 'పరిశీలనలో' : 'Under MO Review'}</option>
-                <option value="PENDING">{language === 'te' ? 'పెండింగ్' : 'Screening Due'}</option>
+                <option value="REGISTERED">{language === 'te' ? 'స్క్రీనింగ్ పెండింగ్' : 'Screening Due'}</option>
+                <option value="SCREENED">{language === 'te' ? 'పరిశీలనలో' : 'Under Review'}</option>
+                <option value="REFERRED">{language === 'te' ? 'ఆసుపత్రి రిఫరల్' : 'Referred to Hospital'}</option>
+                <option value="FOLLOW_UP">{language === 'te' ? 'పర్యవేక్షణ' : 'Follow-up Due'}</option>
+                <option value="COMPLETED">{language === 'te' ? 'పూర్తయింది' : 'Completed'}</option>
               </select>
             </div>
           </div>
         </div>
       </Card>
 
+      {/* Error State */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-red-900 text-sm">
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={loadPatients}>
+            {language === 'te' ? 'మళ్ళీ ప్రయత్నించండి' : 'Retry'}
+          </Button>
+        </div>
+      )}
+
       {/* Patient List Cards */}
       <div className="space-y-3">
-        {filteredPatients.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <RefreshCw className="w-8 h-8 text-forest-700 animate-spin mx-auto mb-3" />
+            <p className="font-semibold text-ink">
+              {language === 'te' ? 'రోగుల వివరాలు లోడ్ అవుతున్నాయి...' : 'Loading patient records from server...'}
+            </p>
+          </div>
+        ) : paginatedPatients.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 text-ink-muted">
             <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="font-semibold text-ink">No villagers match your search or filters.</p>
-            <p className="text-xs text-ink-muted mt-1">Try resetting the filter criteria or register a new patient.</p>
+            <p className="font-semibold text-ink">
+              {language === 'te' ? 'శోధన ప్రమాణాలకు సరిపోలే రోగులు ఎవరూ లేరు.' : 'No patients match your search or filter.'}
+            </p>
+            <p className="text-xs text-ink-muted mt-1">
+              {language === 'te' ? 'ఫిల్టర్‌లను రీసెట్ చేయండి లేదా కొత్త రోగిని నమోదు చేయండి.' : 'Try adjusting the filters above or register a new patient.'}
+            </p>
+            <div className="mt-4">
+              <Link to="/health-worker/register">
+                <Button variant="primary" size="sm" icon={Plus}>
+                  {language === 'te' ? 'రోగిని నమోదు చేయండి' : 'Register New Patient'}
+                </Button>
+              </Link>
+            </div>
           </div>
         ) : (
-          filteredPatients.map((patient) => (
+          paginatedPatients.map((patient) => (
             <Card key={patient.id} variant="default" padding="md" className="hover:border-forest-400 transition-colors">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                {/* Patient Primary Details */}
+                {/* Primary Details */}
                 <div className="flex items-start gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-forest-900 text-white flex items-center justify-center font-bold font-mono text-sm shrink-0 shadow-sm">
-                    {patient.name.split(' ').map(n => n[0]).join('')}
+                    {patient.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-ink text-base">
-                        {language === 'te' ? patient.nameTe : patient.name}
+                      <h3 className="font-bold text-ink text-base hover:text-forest-800 cursor-pointer" onClick={() => setSelectedCase(patient)}>
+                        {patient.name}
                       </h3>
                       <span className="text-xs font-medium text-ink-muted">
-                        ({patient.age}y • {patient.gender === 'male' ? 'M' : 'F'})
+                        ({patient.age}y • {patient.sex || 'Unknown'})
                       </span>
-                      {getStatusBadge(patient.screeningStatus)}
+                      {renderStatusBadge(patient.status)}
                     </div>
 
                     <div className="flex items-center gap-3 text-xs text-ink-muted mt-1 flex-wrap">
                       <span className="flex items-center gap-1 font-medium text-slate-700">
                         <MapPin className="w-3.5 h-3.5 text-forest-700" />
-                        {patient.habitation}, {patient.gramPanchayat} GP, {patient.mandal}
+                        {patient.village}, {patient.mandal} Mandal
                       </span>
                       <span>•</span>
                       <span className="font-mono text-forest-900 font-semibold bg-forest-50 px-2 py-0.5 rounded border border-forest-100">
-                        {patient.cardSerial}
+                        {patient.patientId || patient.id.slice(0, 16)}
                       </span>
-                      <span>•</span>
-                      <span className="text-slate-600">
-                        {language === 'te' ? patient.habitTe : patient.habit}
-                      </span>
+                      {patient.history && (
+                        <>
+                          <span>•</span>
+                          <span className="text-slate-600 line-clamp-1 max-w-xs">
+                            {patient.history}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Status & Quick Actions */}
+                {/* Actions */}
                 <div className="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                  <Link to="/patient/card-preview">
-                    <Button variant="outline" size="sm" icon={CreditCard}>
-                      {language === 'te' ? 'కార్డ్' : 'Health Card'}
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={CreditCard}
+                    onClick={() => setCardCase(patient)}
+                  >
+                    {language === 'te' ? 'కార్డ్' : 'Health Card'}
+                  </Button>
 
-                  <Link to="/health-worker/screening/new">
-                    <Button variant="primary" size="sm" icon={Camera}>
-                      {language === 'te' ? 'స్క్రీనింగ్' : 'Screening'}
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={Camera}
+                    onClick={() => navigate('/health-worker/screening/new', { state: { patient } })}
+                  >
+                    {language === 'te' ? 'స్క్రీనింగ్' : 'Screening'}
+                  </Button>
 
                   <Button
                     variant="ghost"
                     size="sm"
                     icon={ArrowRight}
-                    onClick={() => navigate('/patient/journey')}
+                    onClick={() => setSelectedCase(patient)}
                   >
-                    {language === 'te' ? 'వివరాలు' : 'Timeline'}
+                    {language === 'te' ? 'పూర్తి చరిత్ర' : 'Details & History'}
                   </Button>
                 </div>
               </div>
@@ -541,6 +430,217 @@ export const PatientDirectoryPage: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4 border-t border-forest-100 text-sm">
+          <span className="text-xs text-ink-muted">
+            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredPatients.length)} of {filteredPatients.length} patients
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs font-mono font-bold px-2">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Details & Clinical History Modal */}
+      {selectedCase && (
+        <Modal
+          isOpen={!!selectedCase}
+          onClose={() => setSelectedCase(null)}
+          title={selectedCase.name}
+          titleTe={selectedCase.name}
+          size="lg"
+        >
+          <div className="space-y-6">
+            {/* Header summary */}
+            <div className="p-4 rounded-2xl bg-forest-50 border border-forest-100 flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <span className="font-mono text-xs font-bold text-forest-900 bg-white px-2 py-0.5 rounded border border-forest-200">
+                  {selectedCase.patientId || selectedCase.id}
+                </span>
+                <div className="text-xs text-ink-muted mt-1">
+                  {selectedCase.age} years • {selectedCase.sex} • Habitation: <strong>{selectedCase.village}</strong>, {selectedCase.mandal} Mandal
+                </div>
+              </div>
+              <div>{renderStatusBadge(selectedCase.status)}</div>
+            </div>
+
+            {/* Medical / Habit History & Symptoms */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+                <span className="text-xs font-bold text-forest-900 uppercase tracking-wider block">
+                  Habit & Medical Background
+                </span>
+                <p className="text-xs text-slate-700">
+                  {selectedCase.history || 'No chronic tobacco/alcohol habits recorded.'}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+                <span className="text-xs font-bold text-forest-900 uppercase tracking-wider block">
+                  Chief Complaints / Symptoms
+                </span>
+                <p className="text-xs text-slate-700">
+                  {selectedCase.symptoms || 'Routine preventive screening check.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Clinical Care Timeline & History */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-sm text-ink flex items-center gap-2">
+                <Clock className="w-4 h-4 text-forest-800" />
+                {language === 'te' ? 'కేర్ ప్రయాణం మరియు చరిత్ర' : 'Clinical Care Journey & History'}
+              </h4>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {selectedCase.events && selectedCase.events.length > 0 ? (
+                  selectedCase.events.map((evt, idx) => (
+                    <div key={evt.id || idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-forest-900 uppercase font-mono text-[11px]">
+                            {evt.action}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            by {evt.actor}
+                          </span>
+                        </div>
+                        {evt.data && Object.keys(evt.data).length > 0 && (
+                          <p className="text-slate-600 mt-1">
+                            {typeof evt.data.reason === 'string'
+                              ? evt.data.reason
+                              : typeof evt.data.notes === 'string'
+                              ? evt.data.notes
+                              : typeof evt.data.rationale === 'string'
+                              ? evt.data.rationale
+                              : JSON.stringify(evt.data)}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-ink-muted whitespace-nowrap">
+                        {evt.at ? new Date(evt.at).toLocaleDateString() : 'Recorded'}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-ink-muted italic">No prior clinical events recorded.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                icon={CreditCard}
+                onClick={() => {
+                  setCardCase(selectedCase);
+                  setSelectedCase(null);
+                }}
+              >
+                {language === 'te' ? 'డిజిటల్ హెల్త్ కార్డ్' : 'View Health Card'}
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Camera}
+                  onClick={() => {
+                    navigate('/health-worker/screening/new', { state: { patient: selectedCase } });
+                  }}
+                >
+                  {language === 'te' ? 'ఓరల్ స్క్రీనింగ్ నిర్వహించండి' : 'Proceed to Screening'}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedCase(null)}>
+                  {language === 'te' ? 'మూసివేయి' : 'Close'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Digital Patient Health Card Preview Modal */}
+      {cardCase && (
+        <Modal
+          isOpen={!!cardCase}
+          onClose={() => setCardCase(null)}
+          title="Digital Patient Health Card"
+          titleTe="డిజిటల్ పేషెంట్ హెల్త్ కార్డ్"
+          size="md"
+        >
+          <div className="space-y-5">
+            <div className="p-6 rounded-3xl bg-gradient-to-br from-forest-900 via-forest-800 to-forest-950 text-white shadow-xl relative overflow-hidden">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-mono tracking-widest uppercase text-forest-200 block">
+                    AAROGYA DRISHTI • ITDA PADERU
+                  </span>
+                  <h3 className="text-xl font-extrabold mt-1">{cardCase.name}</h3>
+                  <p className="text-xs text-forest-200">
+                    {cardCase.age}y • {cardCase.sex} • {cardCase.village}, {cardCase.mandal}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center font-mono font-bold text-xs">
+                  QR
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-white/20 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] text-forest-300 block uppercase font-mono">Unique Patient ID</span>
+                  <span className="font-mono font-bold tracking-wider text-sm">
+                    {cardCase.patientId || cardCase.id}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-forest-300 block uppercase font-mono">Status</span>
+                  <span className="font-bold text-xs uppercase bg-white/20 px-2 py-0.5 rounded">
+                    {cardCase.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-ink-muted text-center">
+              {language === 'te' 
+                ? 'ఈ డిజిటల్ కార్డును భద్రపరచండి. ఆసుపత్రి మరియు టెలిమెడిసిన్ కన్సల్టేషన్‌లలో ఈ ఐడీని ఉపయోగించండి.'
+                : 'Digital health credential for rural community access. Show this card at the Sub-Centre or District Hospital.'}
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                {language === 'te' ? 'కార్డ్ ముద్రించండి' : 'Print Physical Card'}
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => setCardCase(null)}>
+                {language === 'te' ? 'పూర్తయింది' : 'Done'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

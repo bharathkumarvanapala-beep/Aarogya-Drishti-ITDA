@@ -1,3 +1,4 @@
+import { MedGemmaPage } from '../features/health-worker/MedGemmaPage';
 import { ConnectedAdminPage } from '../features/admin/ConnectedAdminPage';
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -25,6 +26,15 @@ import { PatientDashboard } from '../features/patient/PatientDashboard';
 import { HealthCardPreviewPage } from '../features/patient/HealthCardPreviewPage';
 import { CareJourneyTimelinePage } from '../features/patient/CareJourneyTimelinePage';
 import { CaregiverAccessPage } from '../features/patient/CaregiverAccessPage';
+import { HealthWorkerDashboard } from '../features/health-worker/HealthWorkerDashboard';
+import { PatientDirectoryPage } from '../features/health-worker/PatientDirectoryPage';
+import { PatientRegistrationPage } from '../features/health-worker/PatientRegistrationPage';
+import { ScreeningIntakePage } from '../features/health-worker/ScreeningIntakePage';
+import { GuidedOralCameraPage } from '../features/health-worker/GuidedOralCameraPage';
+import { ReferralTrackingPage } from '../features/health-worker/ReferralTrackingPage';
+import { FollowUpQueuePage } from '../features/health-worker/FollowUpQueuePage';
+import { OfflineSyncHubPage } from '../features/health-worker/OfflineSyncHubPage';
+import { AiResearchDemoPage } from '../features/screening/AiResearchDemoPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -51,12 +61,13 @@ export const AppRouter: React.FC = () => {
           <Route path="/specialist/*" element={<ProtectedRoute allowedRoles={['specialist']}><CareWorkflowPage /></ProtectedRoute>} />
           <Route path="/navigator/*" element={<ProtectedRoute allowedRoles={['hospital_coordinator']}><CareWorkflowPage /></ProtectedRoute>} />
           <Route path="/care" element={<ProtectedRoute allowedRoles={['health_worker','asha','anm','doctor','specialist','hospital_coordinator','admin','patient']}><CareWorkflowPage /></ProtectedRoute>} />
+          <Route path="/health-worker/medgemma" element={<ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']}><MedGemmaPage /></ProtectedRoute>} />
           {/* Frontline Health Worker (ASHA & ANM) Protected Portal Routes */}
           <Route
             path="/health-worker"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <HealthWorkerDashboard />
               </ProtectedRoute>
             }
           />
@@ -64,7 +75,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/patients"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <PatientDirectoryPage />
               </ProtectedRoute>
             }
           />
@@ -72,7 +83,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/register"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <PatientRegistrationPage />
               </ProtectedRoute>
             }
           />
@@ -80,7 +91,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/screening/new"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <ScreeningIntakePage />
               </ProtectedRoute>
             }
           />
@@ -88,7 +99,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/screening/camera"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <GuidedOralCameraPage />
               </ProtectedRoute>
             }
           />
@@ -96,7 +107,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/screening/:id/camera"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <GuidedOralCameraPage />
               </ProtectedRoute>
             }
           />
@@ -104,7 +115,7 @@ export const AppRouter: React.FC = () => {
             path="/screening/demo/ai-demo"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm', 'doctor', 'specialist']} portalName="AI Research Gateway">
-                <CareWorkflowPage />
+                <AiResearchDemoPage />
               </ProtectedRoute>
             }
           />
@@ -112,7 +123,7 @@ export const AppRouter: React.FC = () => {
             path="/screening/:id/ai-demo"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm', 'doctor', 'specialist']} portalName="AI Research Gateway">
-                <CareWorkflowPage />
+                <AiResearchDemoPage />
               </ProtectedRoute>
             }
           />
@@ -120,7 +131,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/referrals"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <ReferralTrackingPage />
               </ProtectedRoute>
             }
           />
@@ -128,7 +139,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/follow-ups"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <FollowUpQueuePage />
               </ProtectedRoute>
             }
           />
@@ -136,7 +147,7 @@ export const AppRouter: React.FC = () => {
             path="/health-worker/sync"
             element={
               <ProtectedRoute allowedRoles={['health_worker', 'asha', 'anm']} portalName="Frontline Healthcare Portal">
-                <CareWorkflowPage />
+                <OfflineSyncHubPage />
               </ProtectedRoute>
             }
           />
