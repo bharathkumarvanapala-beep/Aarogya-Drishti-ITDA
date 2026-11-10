@@ -70,7 +70,7 @@ A primary mandate of AAROGYA DRISHTI is clinical safety and transparent AI bound
    - Scheduled diagnostic punch biopsy `BIO-2026-0028` in DH Pathology Lab with 72h turnaround.
    - Tribal patient navigator Rajesh Varma facilitates free ITDA pickup van and Paderu Ashram lodging.
 7. **Phase 10: District Health Governance**
-   - Srikanth Rao, IAS (Project Officer, ITDA Paderu) monitors G. Madugula pilot saturation (84.3% screened), epidemiological habit trends, and edge telemetry.
+   - District Administrator (ITDA Paderu) monitors G. Madugula pilot saturation (84.3% screened), epidemiological habit trends, and edge telemetry.
 8. **Phase 11: Offline Persistence & Synchronous Queue**
    - Verified offline IndexedDB `aarogya_drafts` and `sync_queue` persistence.
    - Verified Service Worker static caching and offline app shell loading.

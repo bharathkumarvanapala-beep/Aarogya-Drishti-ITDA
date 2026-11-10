@@ -12,7 +12,7 @@ export const demoAccounts:{role:UserRole;username:string;name:string;label:strin
  {role:'asha',username:'asha_lakshmi',name:'Lakshmi Devi',label:'ASHA Worker Portal',te:'ఆశా కార్యకర్త పోర్టల్',id:'ASHA-GMAD-01'},
  {role:'doctor',username:'doc_suresh',name:'Dr. K. Suresh Kumar',label:'Doctor Portal',te:'వైద్యుల పోర్టల్',id:'APMC/2018/04912'},
  {role:'hospital_coordinator',username:'hosp_paderu',name:'Rajesh Varma',label:'Hospital Referral Coordinator',te:'ఆసుపత్రి రిఫరల్ సమన్వయకర్త',id:'HRC-ASR-042'},
- {role:'admin',username:'admin_rajesh',name:'Rajesh Varma, IAS',label:'District Admin Portal',te:'జిల్లా నిర్వాహక పోర్టల్',id:'ADM-ITDA-01'},
+ {role:'admin',username:'admin_rajesh',name:'District Administrator',label:'District Admin Portal',te:'జిల్లా నిర్వాహక పోర్టల్',id:'ADM-ITDA-01'},
  {role:'specialist',username:'spec_anitha',name:'Dr. Anitha (Specialist Oncologist)',label:'Specialist Portal',te:'ప్రత్యేక వైద్యుల పోర్టల్',id:'APMC/2012/59021'},
 ];
 export function DemoAccounts(){

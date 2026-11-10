@@ -755,10 +755,10 @@ export const STAFF_DIRECTORY: StaffMember[] = [
   },
   {
     id: 'USR-ADM-001',
-    name: 'Srikanth Rao, IAS',
-    nameTe: 'శ్రీకాంత్ రావు, ఐఏఎస్',
+    name: 'District Administrator',
+    nameTe: 'జిల్లా నిర్వాహకుడు',
     role: 'admin',
-    title: 'Project Officer, ITDA Paderu',
+    title: 'District Health Administrator',
     mandal: 'District Headquarter',
     facility: 'ITDA Collectorate Complex, Paderu',
     assignedAreas: 'Alluri Sitharama Raju District',

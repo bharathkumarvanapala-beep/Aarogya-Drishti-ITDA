@@ -67,7 +67,7 @@ Under the AAROHAN Hackathon 2026 specifications and Indian Digital Personal Data
 | **Medical Officer (Doctor)**| `doc_suresh` | Dr. K. Suresh, MBBS | G. Madugula PHC | Longitudinal case review, independent clinical assessment, specialist referrals, telemedicine |
 | **Specialist Clinician** | `spec_anand` | Dr. M. Anand, MDS (Oral Onco) | District Hospital Paderu | Secondary opinion, teleconsultation, biopsy order |
 | **Hospital Coordinator** | `hosp_paderu` | Rajesh Varma | District Hospital Paderu | Referral intake, appointment scheduling, biopsy & pathology tracking |
-| **District Administrator**| `admin_itda` | Project Officer, ITDA Paderu | Alluri Sitharama Raju District | Aggregated coverage maps, screening statistics, offline sync monitors, user accounts |
+| **District Administrator**| `admin_itda` | District Health Administrator | Alluri Sitharama Raju District | Aggregated coverage maps, screening statistics, offline sync monitors, user accounts |
 | **Patient / Family** | `pat_kondala` | Kondala Rao / Authorized Son | Kothapalli, G. Madugula | Optional portal, care timeline, caregiver authorization |
 
 ---

@@ -547,12 +547,12 @@ export const UnitTestsPage: React.FC = () => {
       id: 'auth-05',
       suite: 'auth',
       suiteTitle: 'Role Authorization & Personas',
-      name: 'Project Officer ITDA Paderu Srikanth Rao, IAS',
+      name: 'District Health Administrator Persona',
       description: 'Verifies district administrative governance identity.',
       run: () => {
         const t0 = performance.now();
         const admin = DEMO_USERS.admin;
-        const pass = admin.name.includes('Srikanth Rao, IAS') && admin.roleTitle.includes('ITDA Paderu');
+        const pass = admin.name.includes('District Administrator') && admin.roleTitle.includes('District Health Administrator');
         return {
           pass,
           details: `Administrator: ${admin.name}, Title: ${admin.roleTitle}`,

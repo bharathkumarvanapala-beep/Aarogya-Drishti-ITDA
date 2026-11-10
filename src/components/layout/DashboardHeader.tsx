@@ -27,7 +27,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-forest-100 shadow-sm transition-all h-16 sm:h-20 flex items-center px-4 sm:px-6 lg:px-8">
       <div className="w-full flex items-center justify-between gap-4">
-        
+
         {/* Left Side: Mobile Menu Button & Brand Identity */}
         <div className="flex items-center gap-3">
           {onToggleSidebar && (
@@ -78,19 +78,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
 
         {/* Right Side: Sync status, Notifications, Language, Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
-          
+
           {/* Offline Sync Status Badge / Pill */}
           <Link
             to="/health-worker/sync"
-            className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all hover:shadow-sm ${
-              syncState === 'SYNCED'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                : syncState === 'SYNCING'
+            className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all hover:shadow-sm ${syncState === 'SYNCED'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+              : syncState === 'SYNCING'
                 ? 'bg-blue-50 text-blue-800 border-blue-300 animate-pulse'
                 : syncState === 'SAVED_LOCALLY'
-                ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                : 'bg-red-50 text-red-800 border-red-300 hover:bg-red-100'
-            }`}
+                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                  : 'bg-red-50 text-red-800 border-red-300 hover:bg-red-100'
+              }`}
             title="Click to open Offline Synchronization Hub"
           >
             {syncState === 'SYNCED' ? (

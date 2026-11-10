@@ -40,9 +40,9 @@ describe('Website Unit Test: Demo Personas & Multi-Tier Role Scoping', () => {
     expect(coordinator.roleTitle).toContain('Patient Navigator');
   });
 
-  it('should configure Project Officer ITDA Paderu administrative governance', () => {
+  it('should configure District Health Administrator administrative governance', () => {
     const admin = DEMO_USERS.admin;
-    expect(admin.name).toBe('Srikanth Rao, IAS');
-    expect(admin.roleTitle).toContain('Project Officer, ITDA Paderu');
+    expect(admin.name).toBe('District Administrator');
+    expect(admin.roleTitle).toContain('District Health Administrator');
   });
 });

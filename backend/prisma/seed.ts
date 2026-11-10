@@ -253,15 +253,15 @@ async function main() {
     create: { userId: specialistUser.id, facilityId: createdFacilities['DH-PADERU'], isPrimary: true },
   });
 
-  // District Admin: Rajesh Varma (ITDA Paderu)
+  // District Admin (ITDA Paderu)
   const roleAdmin = await prisma.role.findUniqueOrThrow({ where: { code: RoleCode.DISTRICT_ADMIN } });
   const adminUser = await prisma.userAccount.upsert({
     where: { username: 'admin_rajesh' },
-    update: { fullName: 'Rajesh Varma, IAS (ITDA Project Officer)' },
+    update: { fullName: 'District Administrator' },
     create: {
       username: 'admin_rajesh',
-      email: 'po.itda.paderu@asr.ap.gov.in',
-      fullName: 'Rajesh Varma, IAS (ITDA Project Officer)',
+      email: 'admin.itda@asr.ap.gov.in',
+      fullName: 'District Administrator',
       passwordHash: defaultPasswordHash,
       phone: '+91-8935-241201',
       isActive: true,

@@ -42,10 +42,10 @@ export const AdminDashboard: React.FC = () => {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-ink">
-              District Oral Health Mission — {currentUser ? (language === 'te' ? currentUser.nameTe : currentUser.name) : 'Srikanth Rao, IAS'}
+              District Oral Health Mission — {currentUser ? (language === 'te' ? currentUser.nameTe : currentUser.name) : (language === 'te' ? 'జిల్లా నిర్వాహకుడు' : 'District Administrator')}
             </h1>
             <p className="text-xs sm:text-sm text-ink-muted">
-              Project Officer, ITDA Paderu • Tribal Habitation Screening Coverage & Referral Governance
+              {language === 'te' ? 'జిల్లా ఆరోగ్య నిర్వాహకుడు • గిరిజన ప్రాంతాల స్క్రీనింగ్ & రిఫరల్ పాలన' : 'District Health Administrator • Tribal Habitation Screening Coverage & Referral Governance'}
             </p>
           </div>
 

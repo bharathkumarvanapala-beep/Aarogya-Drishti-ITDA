@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build && node scripts/write-netlify-routing.cjs"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# Set BACKEND_ORIGIN to the deployed HTTPS backend in Netlify's environment settings.
+# Set VITE_DEMO_MODE=true only when connecting to the isolated demo backend.

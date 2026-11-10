@@ -663,8 +663,8 @@ export function PortalLoginPage() {
               </div>
               <p className="text-xs leading-relaxed">
                 {language === 'te'
-                  ? 'జిల్లా స్థాయి ఆరోగ్య మరియు ఆడిట్ సమాచారాన్ని రక్షించడానికి, అడ్మిన్ ఖాతాలు పబ్లిక్‌గా నమోదు చేసుకోలేరు. అధికారిక అనుమతి కోసం ఐటీడీఏ ప్రాజెక్ట్ ఆఫీసర్ కార్యాలయాన్ని సంప్రదించండి.'
-                  : 'To protect district-wide epidemiological data and patient privacy under DPDPA 2023, administrator accounts cannot be created publicly. Official credentials are issued exclusively by the ITDA Project Officer and DM&HO.'}
+                  ? 'జిల్లా స్థాయి ఆరోగ్య మరియు ఆడిట్ సమాచారాన్ని రక్షించడానికి, అడ్మిన్ ఖాతాలు పబ్లిక్‌గా నమోదు చేసుకోలేరు. అధికారిక అనుమతి కోసం ఐటీడీఏ జిల్లా నోడల్ అడ్మినిస్ట్రేషన్‌ను సంప్రదించండి.'
+                  : 'To protect district-wide epidemiological data and patient privacy under DPDPA 2023, administrator accounts cannot be created publicly. Official credentials are issued exclusively by the ITDA Nodal Administration and DM&HO.'}
               </p>
               <button
                 type="button"
