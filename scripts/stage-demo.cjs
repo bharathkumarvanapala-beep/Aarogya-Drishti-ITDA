@@ -1,0 +1,6 @@
+const fs=require('node:fs'),path=require('node:path');const root=path.resolve(__dirname,'..');
+function stage(target,files){const out=path.join(root,'.local',target);fs.mkdirSync(out,{recursive:true});for(const file of files)fs.cpSync(path.join(root,file),path.join(out,path.basename(file)),{recursive:true});return out;}
+const api=stage('demo-api',['backend/src','backend/prisma','backend/package.json','backend/package-lock.json','backend/tsconfig.json','backend/tsconfig.build.json','backend/nest-cli.json','backend/vercel.json','backend/.vercelignore']);
+const web=stage('demo-web',['src','public','package.json','package-lock.json','index.html','vite.config.ts','tsconfig.json','tsconfig.app.json','tsconfig.node.json','postcss.config.js','tailwind.config.js']);
+const config=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8').replace(/^\uFEFF/,''));config.rewrites[0].destination='https://aarogya-drishti-demo-api.vercel.app/api/:path*';fs.writeFileSync(path.join(web,'vercel.json'),JSON.stringify(config,null,2));fs.writeFileSync(path.join(web,'.vercelignore'),'node_modules/\ndist/\n.env*\n.git/\n');
+console.log('Demo source staged. Deploy only from these linked project directories:\n'+api+'\n'+web);

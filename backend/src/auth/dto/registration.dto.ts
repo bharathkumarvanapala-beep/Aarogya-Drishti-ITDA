@@ -12,12 +12,31 @@ import {
 export class RegisterUserDto {
   @ApiProperty({
     description: 'Target portal role for registration',
-    example: 'doctor',
-    enum: ['doctor', 'asha', 'anm', 'hospital_coordinator', 'admin'],
+    example: 'health_worker',
+    enum: ['patient', 'health_worker', 'doctor', 'specialist', 'asha', 'anm', 'hospital_coordinator', 'hospital', 'admin'],
   })
   @IsNotEmpty({ message: 'Portal role is required' })
   @IsString()
-  @IsIn(['doctor', 'asha', 'anm', 'hospital_coordinator', 'admin', 'ASHA_WORKER', 'ANM_WORKER', 'MEDICAL_OFFICER', 'DISTRICT_ADMIN', 'HOSPITAL_STAFF'], {
+  @IsIn([
+    'patient',
+    'health_worker',
+    'doctor',
+    'specialist',
+    'hospital',
+    'hospital_coordinator',
+    'asha',
+    'anm',
+    'admin',
+    'PATIENT',
+    'HEALTH_WORKER',
+    'ASHA_WORKER',
+    'ANM_WORKER',
+    'MEDICAL_OFFICER',
+    'SPECIALIST_DOCTOR',
+    'DISTRICT_ADMIN',
+    'HOSPITAL_STAFF',
+    'SUPER_ADMIN',
+  ], {
     message: 'Invalid portal role specified',
   })
   portalRole: string;
@@ -42,7 +61,7 @@ export class RegisterUserDto {
 
   @ApiPropertyOptional({ description: 'Official email address', example: 'ramesh.phc@ap.gov.in' })
   @IsOptional()
-  @IsEmail({}, { message: 'Invalid email address format' })
+  @IsString()
   email?: string;
 
   @ApiProperty({ description: 'Account password', example: 'DoctorSecure@2026' })
@@ -114,6 +133,35 @@ export class RegisterUserDto {
   @IsOptional()
   @IsString()
   facilityName?: string;
+
+  @ApiPropertyOptional({ description: 'Assigned village / habitation' })
+  @IsOptional()
+  @IsString()
+  village?: string;
+
+  @ApiPropertyOptional({ description: 'Professional or health worker qualifications' })
+  @IsOptional()
+  @IsString()
+  qualifications?: string;
+
+  @ApiPropertyOptional({ description: 'Professional or regulatory registration number' })
+  @IsOptional()
+  @IsString()
+  registrationNumber?: string;
+
+  @ApiPropertyOptional({ description: 'Worker designation (e.g. ASHA, ANM)' })
+  @IsOptional()
+  @IsString()
+  workerDesignation?: string;
+
+  @ApiPropertyOptional({ description: 'Patient age' })
+  @IsOptional()
+  age?: number | string;
+
+  @ApiPropertyOptional({ description: 'Patient sex' })
+  @IsOptional()
+  @IsString()
+  sex?: string;
 }
 
 export class ForgotPasswordDto {
@@ -136,6 +184,7 @@ export class ForgotPasswordDto {
 }
 
 export class ResetPasswordDto {
+  @IsOptional() @IsString() mfaCode?: string;
   @ApiProperty({ description: 'Password reset token or verified OTP' })
   @IsNotEmpty({ message: 'Reset token is required' })
   @IsString()

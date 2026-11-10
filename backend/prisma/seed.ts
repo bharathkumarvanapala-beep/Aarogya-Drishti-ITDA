@@ -1,8 +1,14 @@
 import { PrismaClient, RoleCode, FacilityType, HabitationCategory, Gender, CardStatus, CardAction, AuthorizationBasis, ConsentType, ConsentStatus, ScreeningStatus, RiskImpression, OralViewKey, QualityVerdict, TriageCategory, ClinicalAction, ReferralUrgency, ReferralStatus, AppointmentStatus, InvestigationType, BiopsyStage, HistopathVerdict, FollowUpType, FollowUpStatus } from '@prisma/client';
 
+import * as argon2 from 'argon2';
 const prisma = new PrismaClient();
 
 async function main() {
+  const seedPassword = process.env.DEMO_SEED_PASSWORD;
+  if (!seedPassword || seedPassword.length < 12 || process.env.CONFIRM_SYNTHETIC_SEED !== 'yes') {
+    throw new Error('Set CONFIRM_SYNTHETIC_SEED=yes and a private DEMO_SEED_PASSWORD of at least 12 characters. Use an isolated demonstration database.');
+  }
+  const defaultPasswordHash = await argon2.hash(seedPassword, { type: argon2.argon2id });
   console.log('🌱 Starting Aarogya Drishti clinical seed pipeline...');
 
   // 1. Roles
@@ -164,8 +170,6 @@ async function main() {
   // 5. User Accounts & Role Assignments (Matching Frontend Mock Personas)
   console.log('... Seeding standard test personas');
 
-  // Universal dev password hash for testing ($argon2id$ or test bcrypt equivalent)
-  const defaultPasswordHash = '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$dGVzdF9oYXNoX2Fhcm9neWFfZHJpc2h0aV8yMDI2';
 
   // Frontline Health Worker: Lakshmi Devi (ASHA)
   const roleAsha = await prisma.role.findUniqueOrThrow({ where: { code: RoleCode.ASHA_WORKER } });

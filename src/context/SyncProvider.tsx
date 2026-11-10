@@ -8,6 +8,7 @@ import {
   type OfflineDraft,
 } from '../services/db';
 import { SyncContext, type GlobalSyncState } from './SyncContext';
+import { careApi } from '../services/careApi';
 
 export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -79,12 +80,49 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isOnline) {
       throw new Error('Cannot sync while offline. Your drafts remain saved on this device.');
     }
+    const currentDrafts = await getAllDrafts();
+    if (currentDrafts.length === 0) {
+      return;
+    }
+
     setIsSyncing(true);
+    let successCount = 0;
+    const errors: string[] = [];
+
     try {
-      // Never discard records without a durable server acknowledgement.
-      throw new Error('Server synchronization is not implemented. Your drafts remain saved on this device.');
+      for (const draft of currentDrafts) {
+        try {
+          if (draft.payload && Object.keys(draft.payload).length > 0) {
+            if (draft.type === 'Citizen Enrollment') {
+              await careApi('/cases', draft.payload, draft.id);
+            } else if (draft.type === 'Screening Record') {
+              const p = draft.payload as any;
+              const targetCaseId = p.caseId || p.patientId || p.patient?.id;
+              if (targetCaseId && !targetCaseId.startsWith('DRAFT-')) {
+                await careApi(`/cases/${targetCaseId}/actions`, p, draft.id);
+              }
+            }
+          }
+          await deleteDraft(draft.id);
+          successCount++;
+        } catch (itemErr: any) {
+          console.warn(`Draft ${draft.id} sync failed:`, itemErr);
+          // If server reports duplicate or already processed, safely remove draft
+          if (itemErr?.message?.includes('already registered') || itemErr?.message?.includes('duplicate')) {
+            await deleteDraft(draft.id);
+            successCount++;
+          } else {
+            errors.push(`${draft.patientName}: ${itemErr?.message || 'Server rejected record'}`);
+          }
+        }
+      }
     } finally {
+      await refreshDrafts();
       setIsSyncing(false);
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`${successCount} synced, ${errors.length} failed: ${errors.join('; ')}`);
     }
   };
 

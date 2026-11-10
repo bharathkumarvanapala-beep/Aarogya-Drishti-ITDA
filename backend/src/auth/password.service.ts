@@ -6,22 +6,6 @@ import * as crypto from 'crypto';
 export class PasswordService {
   private readonly logger = new Logger(PasswordService.name);
 
-  // Default seed hash generated during Prisma initial seeding
-  private readonly SEED_DEFAULT_HASH =
-    '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$dGVzdF9oYXNoX2Fhcm9neWFfZHJpc2h0aV8yMDI2';
-
-  // Standard development passwords allowed for synthetic testing accounts
-  private readonly DEV_TEST_PASSWORDS = new Set([
-    'Aarogya@2026',
-    'demo123',
-    'password',
-    'password123',
-    'admin123',
-    'asha123',
-    'doctor123',
-    'Test@123',
-  ]);
-
   /**
    * Hashes plain text password using strict Argon2id parameters
    */
@@ -44,14 +28,7 @@ export class PasswordService {
    */
   async verify(hash: string, plainText: string): Promise<boolean> {
     try {
-      // Check if hash is the synthetic seed baseline placeholder
-      if (hash === this.SEED_DEFAULT_HASH) {
-        if (this.DEV_TEST_PASSWORDS.has(plainText)) {
-          return true;
-        }
-      }
-
-      // Check standard Argon2 verification
+      // Verify only a real Argon2 hash.
       return await argon2.verify(hash, plainText);
     } catch (error) {
       this.logger.warn(`Password verification failed: ${(error as Error).message}`);

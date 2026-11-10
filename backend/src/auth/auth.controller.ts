@@ -1,3 +1,4 @@
+import { cookieValue, sendSession, clearSession } from './session-cookies';
 import {
   Controller,
   Post,
@@ -10,6 +11,8 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,7 +20,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import {
   LoginDto,
@@ -63,11 +66,12 @@ export class AuthController {
     description: 'Account pending verification, rejected, or unauthorized for portal',
   })
   async login(
+    @Res({passthrough:true}) res: Response,
     @Body() loginDto: LoginDto,
     @Req() req: Request,
   ): Promise<AuthResponseDto> {
     const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip;
-    return this.authService.login(loginDto, ipAddress);
+    return sendSession(req,res,await this.authService.login(loginDto, ipAddress),loginDto.rememberMe);
   }
 
   @Public()
@@ -76,7 +80,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register new healthcare professional account',
     description:
-      'Submits registration for Doctor, ASHA, ANM, or Hospital Coordinator. Saves account in Pending Verification status requiring administrative review.',
+      'Submits an unassigned ASHA/ANM worker request. Privileged accounts and facility assignments require an administrator.',
   })
   @ApiResponse({
     status: 201,
@@ -114,10 +118,16 @@ export class AuthController {
   })
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
-  ): Promise<{ success: boolean; message: string; resetToken?: string }> {
+  ): Promise<{ success: boolean; message: string }> {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
 
+  @Public()
+  @Post('mfa/setup')
+  async setupMfa(@Body() body: {token:string}) {
+    if(typeof body.token!=='string' || !/^[a-f0-9]{64}$/i.test(body.token)) throw new BadRequestException('RESET_INVALID');
+    return this.authService.setupRecoveryMfa(body.token);
+  }
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
@@ -158,11 +168,12 @@ export class AuthController {
     description: 'Invalid or expired verification code',
   })
   async verifyMfa(
+    @Res({passthrough:true}) res: Response,
     @Body() mfaVerifyDto: MfaVerifyDto,
     @Req() req: Request,
   ): Promise<AuthResponseDto> {
     const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip;
-    return this.authService.verifyMfa(mfaVerifyDto, ipAddress);
+    return sendSession(req,res,await this.authService.verifyMfa(mfaVerifyDto, ipAddress),req.headers['x-remember-me']==='true');
   }
 
   @Public()
@@ -183,9 +194,11 @@ export class AuthController {
     description: 'Refresh token invalid, revoked, or expired',
   })
   async refreshTokens(
+    @Req() req: Request,
+    @Res({passthrough:true}) res: Response,
     @Body() refreshTokenDto: RefreshTokenDto,
   ): Promise<AuthResponseDto> {
-    return this.authService.refreshTokens(refreshTokenDto);
+    return sendSession(req,res,await this.authService.refreshTokens({refreshToken:cookieValue(req,'ad_refresh')||refreshTokenDto.refreshToken}),req.headers['x-remember-me']==='true');
   }
 
   @Get('me')
@@ -222,10 +235,34 @@ export class AuthController {
     description: 'Session terminated successfully',
   })
   async logout(
+    @Req() req: Request,
+    @Res({passthrough:true}) res: Response,
     @CurrentUser('id') userId: string,
     @Body() body?: { refreshToken?: string },
   ): Promise<{ loggedOut: boolean }> {
-    return this.authService.logout(userId, body?.refreshToken);
+    const result=await this.authService.logout(userId,cookieValue(req,'ad_refresh')||body?.refreshToken);clearSession(res);return result;
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change password for authenticated user',
+    description: 'Validates current password and updates to a new Argon2id hashed password.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+  })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() body: { currentPassword?: string; newPassword?: string; confirmPassword?: string },
+  ): Promise<{ success: boolean; message: string }> {
+    if (!body?.currentPassword || !body?.newPassword || !body?.confirmPassword) {
+      throw new BadRequestException('Current password, new password, and confirmation password are required.');
+    }
+    return this.authService.changePassword(userId, body.currentPassword, body.newPassword, body.confirmPassword);
   }
 
   // ===========================================================================

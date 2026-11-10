@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: aarogya-drishti-synthetic-demo
+    runtime: node
+    plan: free
+    buildCommand: npm ci --prefix backend --include=dev && npm exec --prefix backend -- prisma generate --schema backend/prisma/schema.prisma && npm run build --prefix backend
+    startCommand: node deploy/free-demo/start.cjs
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.20.0
+      - key: NODE_ENV
+        value: development
+      - key: DEMO_ONLY
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: CARE_KEY_BASE64
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

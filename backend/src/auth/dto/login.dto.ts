@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, MaxLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString, IsOptional, MaxLength } from 'class-validator';
 
 export class LoginDto {
+  @IsOptional() @IsBoolean() rememberMe?: boolean;
   @ApiProperty({ description: 'System username or email', example: 'asha_lakshmi' })
   @IsNotEmpty({ message: 'Username is required' })
   @IsString({ message: 'Username must be a string' })

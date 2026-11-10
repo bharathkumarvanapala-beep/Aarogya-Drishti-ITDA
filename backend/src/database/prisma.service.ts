@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { isolatedDemoEnabled } from '../auth/demo-mode';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -18,6 +19,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
+    isolatedDemoEnabled();
     if (process.env.NODE_ENV === 'test') {
       this.isDbConnected = false;
       this.logger.log('Test environment active: live PostgreSQL connection deferred.');
@@ -26,9 +28,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     try {
       this.logger.log('Connecting to PostgreSQL database via Prisma...');
-      const connectPromise = this.$connect();
+      const connectPromise = this.$connect().then(() => { this.isDbConnected = true; });
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database connection timed out (2000ms limit)')), 2000),
+        setTimeout(() => reject(new Error('Database connection timed out (15000ms limit)')), 15000),
       );
       await Promise.race([connectPromise, timeoutPromise]);
       this.isDbConnected = true;

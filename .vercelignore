@@ -1,0 +1,10 @@
+.local/
+.env*
+backend/
+ai-service/
+deploy/
+deployment-cloudflare-20261109/
+output/
+.git/
+node_modules/
+dist/

@@ -1,291 +1,167 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Video,
-  Mic,
-  MicOff,
-  VideoOff,
-  PhoneOff,
-  Camera,
-  Signal,
-  CheckCircle2,
-  FileText,
-  User,
-  Stethoscope,
-  Send,
-  Lock,
-  ArrowRight
+  ShieldAlert,
+  Building2
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
-import { Alert } from '../../components/common/Alert';
 import { useTranslation } from '../../i18n';
+import { CareVideo } from './CareVideo';
 
 export const DoctorTelemedicinePage: React.FC = () => {
   const { language } = useTranslation();
-
-  // Call state
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [activeStream, setActiveStream] = useState<'patient_face' | 'macro_oral'>('macro_oral');
-  const [callEnded, setCallEnded] = useState(false);
-
-  // Live Clinical Scratchpad
-  const [liveNotes, setLiveNotes] = useState(
-    'Real-time Teleconsultation Note:\nPatient Kondala Rao examined via ASHA worker Lakshmi Devi\'s phone in Kothapalli. Direct visual inspection confirms persistent leukoplakia of right buccal mucosa. Spontaneous bleeding absent. Oral hygiene instructions reinforced. Patient instructed to avoid lime/chuna application.'
-  );
+  const [activeCaseId] = useState('case-asr-2026-0042');
   const [urgentReferralDispatched, setUrgentReferralDispatched] = useState(false);
 
   return (
     <div className="space-y-6 pb-12">
-      
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-forest-100">
         <div>
           <div className="flex items-center gap-2 text-xs text-forest-800 mb-1">
-            <Link to="/doctor" className="hover:underline">Clinical Workstation</Link>
+            <Link to="/doctor" className="hover:underline">
+              {language === 'te' ? 'క్లినికల్ వర్క్‌స్టేషన్' : 'Clinical Workstation'}
+            </Link>
             <span>/</span>
-            <Link to="/doctor/cases" className="hover:underline">Case Review Queue</Link>
+            <Link to="/doctor/cases" className="hover:underline">
+              {language === 'te' ? 'కేసు సమీక్ష వరుస' : 'Case Review Queue'}
+            </Link>
             <span>/</span>
-            <span className="text-forest-950 font-semibold">Telemedicine Hub</span>
+            <span className="text-forest-950 font-semibold">
+              {language === 'te' ? 'టెలిమెడిసిన్ కేంద్రం' : 'Telemedicine Hub'}
+            </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-display font-bold text-ink flex items-center gap-2">
-            Telemedicine Consultation Suite
-            <Badge label="ACTIVE ENCRYPTED SESSION" variant="success" size="sm" />
+            {language === 'te' ? 'ప్రత్యక్ష టెలిమెడిసిన్ కన్సల్టేషన్ సూట్' : 'Telemedicine Consultation Suite'}
+            <Badge label="AUTHENTICATED WEBRTC" variant="success" size="sm" />
           </h1>
           <p className="text-xs text-ink-muted mt-0.5">
-            Bilingual virtual clinical consultation connecting PHC G. Madugula with remote frontline health workers.
+            {language === 'te'
+              ? 'గ్రామీణ ఆరోగ్య కార్యకర్తలు మరియు రోగులతో అనుసంధానించబడిన సురక్షిత క్లినికల్ వీడియో సంప్రదింపు.'
+              : 'Direct peer-to-peer clinical consultation connecting PHC Medical Officers with remote frontline health workers and patients in ASR District.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Link to="/doctor/cases/SCR-2026-0042">
+          <Link to="/doctor/cases">
             <Button variant="outline" size="sm">
-              View Case Records
+              {language === 'te' ? 'కేసుల జాబితా' : 'View Review Queue'}
             </Button>
           </Link>
         </div>
       </div>
 
-      {callEnded ? (
-        /* Call Summary Card if Ended */
-        <Card padding="lg" className="border-forest-200 bg-white text-center py-12 space-y-4">
-          <div className="w-16 h-16 rounded-full bg-forest-100 text-forest-800 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-ink">
-              Telemedicine Consultation Concluded
-            </h2>
-            <p className="text-xs text-ink-muted mt-1 max-w-md mx-auto">
-              Call duration: 14 minutes, 22 seconds. Teleconsultation summary and clinical instructions have been synced to Kothapalli health worker tablet.
-            </p>
-          </div>
+      {/* Main Grid: Real WebRTC Stream & Clinical Patient Context */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Genuine WebRTC Video Engine */}
+        <div className="lg:col-span-8 space-y-4">
+          <CareVideo caseId={activeCaseId} />
 
-          <div className="flex justify-center gap-3 pt-2">
-            <Button variant="primary" size="md" onClick={() => setCallEnded(false)}>
-              Restart Call Session
-            </Button>
-            <Link to="/doctor/cases">
-              <Button variant="outline" size="md">
-                Return to Review Queue
+          {/* Clinical Escalation Bar */}
+          <div className="p-4 bg-white border border-forest-200 rounded-2xl flex items-center justify-between flex-wrap gap-3 shadow-sm">
+            <div>
+              <span className="text-xs font-bold text-forest-950 block">
+                {language === 'te' ? 'టెలికన్సల్టేషన్ తదుపరి చర్య' : 'Post-Consultation Clinical Action'}
+              </span>
+              <span className="text-[11px] text-forest-700">
+                {language === 'te'
+                  ? 'సంప్రదింపు ముగిసిన తర్వాత తృతీయ ఆసుపత్రికి తక్షణ రిఫరల్ జారీ చేయండి.'
+                  : 'Dispatch referral to District Hospital Paderu for specialist biopsy and histopathology.'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={urgentReferralDispatched ? 'secondary' : 'primary'}
+                size="sm"
+                icon={Building2}
+                disabled={urgentReferralDispatched}
+                onClick={() => setUrgentReferralDispatched(true)}
+              >
+                {urgentReferralDispatched
+                  ? language === 'te'
+                    ? 'రిఫరల్ జారీ చేయబడింది'
+                    : 'Referral Dispatched to DH Paderu'
+                  : language === 'te'
+                  ? 'ఆసుపత్రి రిఫరల్ పంపండి'
+                  : 'Issue Hospital Referral'}
               </Button>
-            </Link>
+            </div>
           </div>
-        </Card>
-      ) : (
-        /* Active Video Call Interface */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* Main Video Screen */}
-          <div className="lg:col-span-8 space-y-3">
-            <Card padding="none" className="border-forest-900 bg-forest-950 overflow-hidden shadow-2xl relative">
-              
-              {/* Telehealth Status Header Overlay */}
-              <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-                <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-white text-xs flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold">Kondala Rao (46M)</span>
-                  <span className="text-forest-300">•</span>
-                  <span className="text-forest-200 text-[11px]">Kothapalli Habitation</span>
-                </div>
+        </div>
 
-                <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-white text-[11px] font-mono flex items-center gap-2">
-                  <Signal className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>ASR-Rural-4G (720p @ 30fps)</span>
-                  <Lock className="w-3 h-3 text-emerald-400 ml-1" />
+        {/* Right Column: Verified Patient Record Context */}
+        <div className="lg:col-span-4 space-y-4">
+          <Card
+            title={language === 'te' ? 'కేంద్రీకృత పేషెంట్ రికార్డు' : 'Centralized Patient Record'}
+            subtitle={language === 'te' ? 'ధృవీకరించబడిన క్లినికల్ సమాచారం' : 'Verified Clinical Background'}
+            variant="nature"
+            padding="md"
+          >
+            <div className="space-y-4 text-xs">
+              <div className="p-3 bg-white rounded-xl border border-forest-100 space-y-1.5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-forest-950">Kondala Rao (కొండల రావు)</span>
+                  <span className="font-mono text-[11px] font-bold bg-forest-100 text-forest-900 px-2 py-0.5 rounded">
+                    ASR-PAT-2026-0842
+                  </span>
+                </div>
+                <div className="text-forest-700">
+                  <span>Age: 46 • Male</span>
+                  <span className="mx-1.5">•</span>
+                  <span>Habitation: <strong>Kothapalli, G. Madugula</strong></span>
+                </div>
+                <div className="text-[11px] text-forest-600">
+                  Frontline ASHA Worker: <strong>Lakshmi Devi (+91-94401-23456)</strong>
                 </div>
               </div>
 
-              {/* Main Remote Video Stream Viewport */}
-              <div className="relative aspect-16/10 flex items-center justify-center bg-forest-900">
-                {activeStream === 'macro_oral' ? (
+              {/* History & Symptoms */}
+              <div className="space-y-2">
+                <div className="font-bold text-forest-900 uppercase tracking-wider text-[10px]">
+                  {language === 'te' ? 'అలవాట్లు మరియు లక్షణాలు' : 'Habits & Exposure History'}
+                </div>
+                <div className="p-2.5 rounded-lg bg-forest-50/80 border border-forest-100 text-forest-900 leading-relaxed text-[11px]">
+                  Gutkha and raw tobacco chewer for 18 years. Non-healing painless whitish plaque over right buccal mucosa noted for past 6 months. Burning sensation with hot/spicy foods.
+                </div>
+              </div>
+
+              {/* AI Research Advisory Guardrail */}
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-950 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                  <ShieldAlert size={14} className="text-amber-700 shrink-0" />
+                  <span>AI Advisory Research Flag: YELLOW</span>
+                </div>
+                <p className="text-[10px] text-amber-900 leading-normal">
+                  Mucosal texture irregularity and localized hyperkeratotic plaque detected. Advisory non-clinical assistance only; does not diagnose or rule out cancer. Final clinical judgment rests with the examining Medical Officer.
+                </p>
+              </div>
+
+              {/* Patient Oral Image Preview */}
+              <div className="space-y-1.5">
+                <div className="font-bold text-forest-900 uppercase tracking-wider text-[10px]">
+                  {language === 'te' ? 'ఫోటో స్క్రీనింగ్ దృశ్యం' : 'Screening Photo (View 1 of 5)'}
+                </div>
+                <div className="rounded-xl overflow-hidden border border-forest-200 aspect-video bg-forest-950 relative">
                   <img
                     src="/images/sample_oral_patch.jpg"
-                    alt="Oral Lesion Macro Stream"
+                    alt="Buccal mucosa screening"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-8 text-white text-center space-y-2 bg-gradient-to-b from-forest-800 to-forest-950">
-                    <User className="w-20 h-20 text-forest-300 mx-auto" />
-                    <h3 className="text-base font-bold">Front-Facing Camera: Patient Video</h3>
-                    <p className="text-xs text-forest-200">Patient seated with ASHA worker Lakshmi Devi.</p>
-                  </div>
-                )}
-
-                {/* Macro Stream Indicator Overlay */}
-                <div className="absolute top-16 left-4 bg-emerald-950/80 border border-emerald-400 text-emerald-300 px-2.5 py-1 rounded text-[10px] font-mono uppercase">
-                  Feed: {activeStream === 'macro_oral' ? 'High-Res Oral Camera View' : 'Face Overview'}
-                </div>
-
-                {/* Self-View Picture-in-Picture (Doctor Suresh) */}
-                <div className="absolute bottom-4 right-4 w-32 sm:w-44 aspect-4/3 rounded-xl overflow-hidden border-2 border-forest-600 bg-forest-950 shadow-2xl z-20">
-                  {isVideoOff ? (
-                    <div className="w-full h-full flex items-center justify-center text-forest-400 text-xs bg-forest-900">
-                      Camera Off
-                    </div>
-                  ) : (
-                    <div className="w-full h-full bg-forest-800 flex flex-col items-center justify-center text-white text-center p-2">
-                      <Stethoscope className="w-8 h-8 text-emerald-400 mb-1" />
-                      <span className="text-[10px] font-bold">Dr. K. Suresh</span>
-                      <span className="text-[9px] text-forest-200">PHC Medical Officer</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-1 left-1.5 bg-black/60 px-1 rounded text-[8px] text-white font-mono">
-                    You
+                  <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-0.5 rounded text-[10px] text-white">
+                    Right Buccal Mucosa (Sharpness: 92%)
                   </div>
                 </div>
               </div>
-
-              {/* Video Call Controls Toolbar */}
-              <div className="p-4 bg-forest-900 border-t border-forest-800 flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={isMicMuted ? 'danger' : 'outline'}
-                    size="sm"
-                    icon={isMicMuted ? MicOff : Mic}
-                    onClick={() => setIsMicMuted(!isMicMuted)}
-                  >
-                    {isMicMuted ? 'Unmute' : 'Mute'}
-                  </Button>
-
-                  <Button
-                    variant={isVideoOff ? 'danger' : 'outline'}
-                    size="sm"
-                    icon={isVideoOff ? VideoOff : Video}
-                    onClick={() => setIsVideoOff(!isVideoOff)}
-                  >
-                    {isVideoOff ? 'Start Video' : 'Stop Video'}
-                  </Button>
-                </div>
-
-                {/* Stream Switcher */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveStream(activeStream === 'macro_oral' ? 'patient_face' : 'macro_oral')}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-forest-800 text-white border border-forest-600 hover:bg-forest-700 transition-colors"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>Switch to {activeStream === 'macro_oral' ? 'Face Camera' : 'Oral Camera'}</span>
-                  </button>
-
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    icon={PhoneOff}
-                    onClick={() => setCallEnded(true)}
-                  >
-                    End Call
-                  </Button>
-                </div>
-              </div>
-
-            </Card>
-
-            <Alert 
-              type="info" 
-              title="Encrypted Consultation Link" 
-              titleTe="సురక్షిత వీడియో సంప్రదింపు"
-            >
-              Simulated encrypted WebRTC telemedicine link. Audio, video, and screen-sharing run locally inside your browser demo sandbox.
-            </Alert>
-          </div>
-
-          {/* Right Column: Live Clinical Scratchpad */}
-          <div className="lg:col-span-4 space-y-4">
-            <Card padding="md" className="border-forest-200 bg-white space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-forest-100">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-forest-800" />
-                  <h3 className="text-sm font-bold text-ink">
-                    Live Teleconsultation Notes
-                  </h3>
-                </div>
-                <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Auto-Saving
-                </span>
-              </div>
-
-              <textarea
-                rows={7}
-                value={liveNotes}
-                onChange={(e) => setLiveNotes(e.target.value)}
-                className="w-full p-2.5 border border-forest-300 rounded-lg text-xs leading-relaxed text-ink focus:outline-none focus:ring-2 focus:ring-forest-500 font-sans"
-                placeholder="Type synchronous clinical observations and advice..."
-              />
-
-              {/* Direct Emergency Action */}
-              <div className="space-y-2 pt-2 border-t border-forest-100">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-forest-800">
-                  Direct In-Call Action
-                </span>
-
-                {urgentReferralDispatched ? (
-                  <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-xs text-emerald-950 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span>Emergency Priority Referral Dispatched to District Hospital Paderu.</span>
-                  </div>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={Send}
-                    fullWidth
-                    onClick={() => setUrgentReferralDispatched(true)}
-                  >
-                    Dispatch Emergency Hospital Referral
-                  </Button>
-                )}
-
-                <Link to="/doctor/cases/SCR-2026-0042" className="block">
-                  <Button variant="outline" size="sm" fullWidth icon={ArrowRight} iconPosition="right">
-                    Open Full Assessment Form
-                  </Button>
-                </Link>
-              </div>
-
-            </Card>
-
-            {/* Patient Context Quick Card */}
-            <Card padding="md" className="border-forest-200 bg-forest-50/50 space-y-2 text-xs">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-muted">
-                Patient Quick Reference
-              </span>
-              <div className="space-y-1 text-ink">
-                <p><strong>Name:</strong> Kondala Rao (46M)</p>
-                {language === 'te' && <p className="font-telugu"><strong>పేరు:</strong> కొండల రావు</p>}
-                <p><strong>Habitation:</strong> Kothapalli, G. Madugula</p>
-                <p><strong>History:</strong> 22-year gutkha chewing</p>
-                <p><strong>Health Card:</strong> ASR-CRD-2026-0842</p>
-              </div>
-            </Card>
-          </div>
-
+            </div>
+          </Card>
         </div>
-      )}
-
+      </div>
     </div>
   );
 };

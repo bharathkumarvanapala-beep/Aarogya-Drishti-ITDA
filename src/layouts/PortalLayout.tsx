@@ -28,6 +28,7 @@ export const PortalLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        {import.meta.env.VITE_DEMO_MODE==='true'&&<div className="bg-amber-100 text-amber-950 px-5 py-3 text-sm flex flex-wrap justify-between gap-3"><span>DEMO · Synthetic data only / కల్పిత సమాచారం మాత్రమే</span><Link className="font-bold underline" to="/login">Choose another demo role / మరో పాత్రను ఎంచుకోండి →</Link></div>}
         {/* Sticky Dashboard Header */}
         <DashboardHeader
           onToggleSidebar={() => setMobileDrawerOpen(true)}
