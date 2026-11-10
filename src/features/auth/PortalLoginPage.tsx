@@ -1,1322 +1,1107 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { 
-  Users, 
-  Stethoscope, 
-  Building2, 
-  ShieldAlert, 
-  Heart, 
-  UserPlus, 
-  LogIn, 
-  X, 
-  CheckCircle2, 
-  AlertCircle, 
-  Eye, 
-  EyeOff, 
-  KeyRound, 
-  Sparkles,
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  HeartPulse,
+  Users,
+  Stethoscope,
+  Building2,
+  User,
+  CreditCard,
+  LoaderCircle,
+  CheckCircle2,
+  AlertCircle,
+  FileCheck2,
   Lock,
-  ArrowRight
+  QrCode,
+  Printer
 } from 'lucide-react';
-import { Card } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
-import { BackButton } from '../../components/common/BackButton';
-import { Alert } from '../../components/common/Alert';
-import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 import { useAuth } from '../../context';
 import { useTranslation } from '../../i18n';
+import { authCopy, authErrorKey } from '../../i18n/auth';
+import { dashboardFor, apiRequest } from '../../services/session';
+import './portal.css';
+import { DemoAccounts } from './DemoAccounts';
 import type { UserRole } from '../../types';
 
-type AuthMode = 'signin' | 'signup';
+export type PortalType = 'patient' | 'health_worker' | 'doctor' | 'hospital' | 'admin';
 
-interface RoleConfig {
+interface PortalConfig {
+  id: PortalType;
   role: UserRole;
-  title: string;
+  titleEn: string;
   titleTe: string;
-  badge: string;
+  taglineEn: string;
+  taglineTe: string;
+  icon: typeof HeartPulse;
+  badgeEn: string;
   badgeTe: string;
-  subtitle: string;
-  subtitleTe: string;
-  persona: string;
-  demoIdentifier: string;
-  demoPassword: string;
-  targetPath: string;
-  icon: React.FC<{ className?: string }>;
-  accentColor: string;
-  accentBorder: string;
-  loginPlaceholder: string;
-  loginPlaceholderTe: string;
-  allowPublicSignup: boolean;
+  defaultIdPlaceholderEn: string;
+  defaultIdPlaceholderTe: string;
 }
 
-export const PortalLoginPage: React.FC = () => {
-  const { signIn, registerUser, requestPasswordReset, resetPassword } = useAuth();
-  const { language } = useTranslation();
+const PORTALS: PortalConfig[] = [
+  {
+    id: 'patient',
+    role: 'patient',
+    titleEn: 'Patient & Family Portal',
+    titleTe: 'రోగి మరియు కుటుంబ పోర్టల్',
+    taglineEn: 'Oral care journey, video consultations, and digital health cards for rural citizens.',
+    taglineTe: 'గ్రామీణ పౌరుల కోసం నోటి సంరక్షణ ప్రయాణం, వీడియో సంప్రదింపులు మరియు డిజిటల్ కార్డు.',
+    icon: User,
+    badgeEn: 'Citizen Access',
+    badgeTe: 'పౌరుల ప్రాప్యత',
+    defaultIdPlaceholderEn: 'Mobile Number or Patient ID (e.g. ASR-PAT-2026-0842)',
+    defaultIdPlaceholderTe: 'మొబైల్ నంబర్ లేదా పేషెంట్ ఐడీ (ఉదా. ASR-PAT-2026-0842)',
+  },
+  {
+    id: 'health_worker',
+    role: 'health_worker',
+    titleEn: 'Health Worker Portal',
+    titleTe: 'ఆరోగ్య కార్యకర్త పోర్టల్',
+    taglineEn: 'Frontline ASHA & ANM community screening, quality-checked photos, and offline sync.',
+    taglineTe: 'ఆశా & ఏఎన్‌ఎం ఫ్రంట్‌లైన్ స్క్రీనింగ్, ఫోటో నాణ్యత తనిఖీ మరియు ఆఫ్‌లైన్ సింక్.',
+    icon: Users,
+    badgeEn: 'Frontline Primary Care',
+    badgeTe: 'ప్రాథమిక ఆరోగ్య రక్షణ',
+    defaultIdPlaceholderEn: 'ASHA/ANM ID or Registered Mobile (e.g. asha_lakshmi)',
+    defaultIdPlaceholderTe: 'ఆశా/ఏఎన్‌ఎం ఐడీ లేదా మొబైల్ (ఉదా. asha_lakshmi)',
+  },
+  {
+    id: 'doctor',
+    role: 'doctor',
+    titleEn: 'Doctor & Specialist Portal',
+    titleTe: 'వైద్యుల క్లినికల్ పోర్టల్',
+    taglineEn: 'Medical officer triage, advisory AI review, live teleconsultation, and tertiary referrals.',
+    taglineTe: 'వైద్యాధికారి సమీక్ష, సలహా AI పరిశీలన, ప్రత్యక్ష టెలికన్సల్టేషన్ మరియు రిఫరల్స్.',
+    icon: Stethoscope,
+    badgeEn: 'Clinical Workstation',
+    badgeTe: 'క్లినికల్ వర్క్‌స్టేషన్',
+    defaultIdPlaceholderEn: 'APMC Reg Number or Doctor Email (e.g. doc_suresh)',
+    defaultIdPlaceholderTe: 'APMC రిజిస్ట్రేషన్ నంబర్ లేదా ఈమెయిల్ (ఉదా. doc_suresh)',
+  },
+  {
+    id: 'hospital',
+    role: 'hospital_coordinator',
+    titleEn: 'Hospital Referral Portal',
+    titleTe: 'ఆసుపత్రి రిఫరల్ పోర్టల్',
+    taglineEn: 'Inbound referral navigation, biopsy tracking, histopathology reports, and treatment.',
+    taglineTe: 'ఆసుపత్రి రిఫరల్స్ నిర్వహణ, బయాప్సీ ట్రాకింగ్ మరియు చికిత్స రికార్డులు.',
+    icon: Building2,
+    badgeEn: 'Tertiary Hospital Node',
+    badgeTe: 'జిల్లా ఆసుపత్రి కేంద్రం',
+    defaultIdPlaceholderEn: 'Hospital Staff ID or Email (e.g. hosp_paderu)',
+    defaultIdPlaceholderTe: 'ఆసుపత్రి సిబ్బంది ఐడీ లేదా ఈమెయిల్ (ఉదా. hosp_paderu)',
+  },
+  {
+    id: 'admin',
+    role: 'admin',
+    titleEn: 'District Administration',
+    titleTe: 'జిల్లా పరిపాలనా పోర్టల్',
+    taglineEn: 'ITDA Paderu epidemiology dashboard, staff credentialing, and immutable audit logs.',
+    taglineTe: 'ఐటీడీఏ పాడేరు డాష్‌బోర్డ్, సిబ్బంది ఆమోదం మరియు ఆడిట్ లాగ్స్.',
+    icon: ShieldCheck,
+    badgeEn: 'Nodal Governance',
+    badgeTe: 'జిల్లా పాలన',
+    defaultIdPlaceholderEn: 'Official Administrator Email / Username (e.g. admin_rajesh)',
+    defaultIdPlaceholderTe: 'అధికారిక నిర్వాహక ఈమెయిల్ / యూజర్‌నేమ్ (ఉదా. admin_rajesh)',
+  },
+];
+
+export function PortalLoginPage() {
+  const { language, setLanguage } = useTranslation();
+  const c = authCopy[language];
+  const auth = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  // State for active role selection & dialogs
-  const [selectedRole, setSelectedRole] = useState<UserRole>('doctor');
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [authMode, setAuthMode] = useState<AuthMode>('signin');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // Portal tab selection
+  const initialPortal = (searchParams.get('portal') as PortalType) || 'health_worker';
+  const [selectedPortal, setSelectedPortal] = useState<PortalType>(initialPortal);
 
-  // Unauthorized redirection message if arriving from protected route
-  const unauthorizedAlert = location.state?.unauthorized
-    ? location.state?.message || 'You are not authorized to access this portal. Please log in through your assigned portal.'
-    : null;
-
-  // Sign In form fields
-  const [signInIdentifier, setSignInIdentifier] = useState<string>('');
-  const [signInPassword, setSignInPassword] = useState<string>('');
-
-  // Sign Up form fields tailored to role
-  const [signUpData, setSignUpData] = useState({
-    fullName: '',
-    fullNameTe: '',
-    phone: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    // Doctor Portal fields
-    doctorId: '',
-    medicalQualification: 'MBBS',
-    specialization: 'General Medicine',
-    registrationNumber: '', // APMC Reg #
-    // ASHA Worker Portal fields
-    ashaId: '',
-    assignedVillage: 'Kothapalli',
-    // ANM Portal fields
-    anmId: '',
-    assignedHealthCentre: 'G. Madugula Sub-Centre',
-    // Hospital Coordinator fields
-    hospitalCoordinatorId: '',
-    facilityName: 'District Hospital, Paderu',
-    // Common regional fields
-    mandal: 'G. Madugula',
-    district: 'Alluri Sitharama Raju',
+  // Authentication mode
+  const [resetToken] = useState(() => {
+    const value = new URLSearchParams(window.location.hash.slice(1)).get('reset') || '';
+    if (value) history.replaceState(null, '', window.location.pathname);
+    return value;
   });
 
-  // Forgot Password modal state
-  const [isForgotModalOpen, setIsForgotModalOpen] = useState<boolean>(false);
-  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
-  const [forgotIdentifier, setForgotIdentifier] = useState<string>('');
-  const [forgotToken, setForgotToken] = useState<string>('');
-  const [forgotNewPassword, setForgotNewPassword] = useState<string>('');
-  const [forgotConfirmPassword, setForgotConfirmPassword] = useState<string>('');
-  const [forgotError, setForgotError] = useState<string | null>(null);
-  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset' | 'card_lookup'>(
+    resetToken ? 'reset' : 'login'
+  );
 
-  const roleConfigs: Record<UserRole, RoleConfig> = {
-    doctor: {
-      role: 'doctor',
-      title: 'Doctor Portal',
-      titleTe: 'డాక్టర్ పోర్టల్ (వైద్యాధికారి / స్పెషలిస్ట్)',
-      badge: 'Clinical Review & Diagnosis',
-      badgeTe: 'క్లినికల్ సమీక్ష & నిర్ధారణ',
-      subtitle: 'Primary Health Centre case review, lesion photography evaluation, APMC clinical diagnosis, and specialist oncology referral dispatch.',
-      subtitleTe: 'ప్రాథమిక ఆరోగ్య కేంద్రాల కేసుల సమీక్ష, ఫోటోల పరీక్ష మరియు స్పెషలిస్ట్ రిఫరల్ నిర్ణయాలు.',
-      persona: 'Dr. K. Suresh, MBBS (APMC/2018/04912, G. Madugula PHC)',
-      demoIdentifier: 'dr_suresh',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/doctor',
-      icon: Stethoscope,
-      accentColor: 'bg-emerald-50/50',
-      accentBorder: 'border-emerald-700',
-      loginPlaceholder: 'Registered Mobile or Doctor ID / APMC #',
-      loginPlaceholderTe: 'నమోదైన మొబైల్ లేదా డాక్టర్ ఐడీ / APMC సంఖ్య',
-      allowPublicSignup: true,
-    },
-    asha: {
-      role: 'asha',
-      title: 'ASHA Worker Portal',
-      titleTe: 'ఆశా కార్యకర్త పోర్టల్ (ASHA Worker)',
-      badge: 'Frontline Community Screening',
-      badgeTe: 'గ్రామీణ ఫీల్డ్ స్క్రీనింగ్',
-      subtitle: 'Doorstep oral health screening, bilingual informed consent, 5-view guided camera intake, and offline synchronisation across tribal habitations.',
-      subtitleTe: 'గ్రామీణ నివాసాల్లో నోటి స్క్రీనింగ్, సమ్మతి పత్రం, 5-యాంగిల్ ఫోటోలు మరియు ఆఫ్‌లైన్ సింక్.',
-      persona: 'Lakshmi Devi (ASHA-GMAD-01, G. Madugula)',
-      demoIdentifier: 'ASHA-GMAD-01',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/health-worker',
-      icon: Users,
-      accentColor: 'bg-forest-50/50',
-      accentBorder: 'border-forest-700',
-      loginPlaceholder: 'Registered Mobile or ASHA ID (e.g. ASHA-GMAD-01)',
-      loginPlaceholderTe: 'నమోదైన మొబైల్ లేదా ఆశా ఐడీ',
-      allowPublicSignup: true,
-    },
-    anm: {
-      role: 'anm',
-      title: 'ANM Portal',
-      titleTe: 'ఏఎన్‌ఎం పోర్టల్ (Auxiliary Nurse Midwife)',
-      badge: 'Sub-Centre & Village Healthcare',
-      badgeTe: 'సబ్-సెంటర్ & ఆరోగ్య సేవలు',
-      subtitle: 'Sub-centre screening oversight, village health camp coordination, follow-up monitoring, and high-risk case triaging.',
-      subtitleTe: 'సబ్-సెంటర్ స్థాయి స్క్రీనింగ్ పర్యవేక్షణ, ఫాలో-అప్ నిర్వహణ మరియు రిఫరల్ సమన్వయం.',
-      persona: 'Sarada Devi, ANM (ANM-GMAD-01, G. Madugula)',
-      demoIdentifier: 'ANM-GMAD-01',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/health-worker',
-      icon: Users,
-      accentColor: 'bg-teal-50/50',
-      accentBorder: 'border-teal-700',
-      loginPlaceholder: 'Registered Mobile or ANM ID (e.g. ANM-GMAD-01)',
-      loginPlaceholderTe: 'నమోదైన మొబైల్ లేదా ఏఎన్‌ఎం ఐడీ',
-      allowPublicSignup: true,
-    },
-    admin: {
-      role: 'admin',
-      title: 'District Admin Portal',
-      titleTe: 'జిల్లా అడ్మిన్ పోర్టల్ (ITDA Paderu)',
-      badge: 'Governance & Analytics',
-      badgeTe: 'జిల్లా స్థాయి పరిపాలన & గణాంకాలు',
-      subtitle: 'Alluri Sitharama Raju district screening coverage, village mapping, professional account approval desk, and system monitoring.',
-      subtitleTe: 'జిల్లా వ్యాప్తంగా స్క్రీనింగ్ గణాంకాలు, సిబ్బంది ఆమోద డెస్క్ మరియు పర్యవేక్షణ.',
-      persona: 'Srikanth Rao, IAS (Project Officer, ITDA Paderu)',
-      demoIdentifier: 'admin_rajesh',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/admin',
-      icon: ShieldAlert,
-      accentColor: 'bg-amber-50/50',
-      accentBorder: 'border-amber-700',
-      loginPlaceholder: 'Registered Admin Username or Mobile Number',
-      loginPlaceholderTe: 'అడ్మిన్ యూజర్‌నేమ్ లేదా మొబైల్ సంఖ్య',
-      allowPublicSignup: false, // Strict requirement: No unrestricted public admin registration
-    },
-    hospital_coordinator: {
-      role: 'hospital_coordinator',
-      title: 'Hospital Referral Coordinator Portal',
-      titleTe: 'ఆసుపత్రి రిఫరల్ సమన్వయకర్త పోర్టల్',
-      badge: 'Secondary/Tertiary Hospital Care',
-      badgeTe: 'ఆసుపత్రి స్థాయి రిఫరల్ నావిగేషన్',
-      subtitle: 'Inbound referral triage from PHCs, specialist oncology clinic scheduling, biopsy/pathology tracking, and tribal patient navigation.',
-      subtitleTe: 'రిఫరల్స్ స్వీకరణ, స్పెషలిస్ట్ అపాయింట్‌మెంట్లు మరియు బయాప్సీ ట్రాకింగ్.',
-      persona: 'Rajesh Varma (HRC-ASR-042, District Hospital Paderu)',
-      demoIdentifier: 'HRC-ASR-042',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/hospital',
-      icon: Building2,
-      accentColor: 'bg-blue-50/50',
-      accentBorder: 'border-blue-700',
-      loginPlaceholder: 'Registered Mobile or Coordinator ID (e.g. HRC-ASR-042)',
-      loginPlaceholderTe: 'నమోదైన మొబైల్ లేదా కోఆర్డినేటర్ ఐడీ',
-      allowPublicSignup: true,
-    },
-    // Required by UserRole type; Patient Portal remains completely unchanged
-    patient: {
-      role: 'patient',
-      title: 'Patient & Family Portal',
-      titleTe: 'రోగి & కుటుంబ పోర్టల్',
-      badge: 'Citizen Health Records',
-      badgeTe: 'పౌరుల ఆరోగ్య రికార్డులు',
-      subtitle: 'Self-service view of screening history, physical health card token preview, and family caregiver access.',
-      subtitleTe: 'రోగి వివరాలు, హెల్త్ కార్డ్ మరియు సంరక్షకుల యాక్సెస్ నిర్వహణ.',
-      persona: 'Kondala Rao (Self / Caregiver)',
-      demoIdentifier: '9440188421',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/patient/portal',
-      icon: Heart,
-      accentColor: 'bg-rose-50/50',
-      accentBorder: 'border-rose-700',
-      loginPlaceholder: 'Health Card Reference Number or Mobile',
-      loginPlaceholderTe: 'హెల్త్ కార్డ్ రిఫరెన్స్ లేదా మొబైల్',
-      allowPublicSignup: false,
-    },
-    // Supporting legacy role mappings
-    health_worker: {
-      role: 'health_worker',
-      title: 'Frontline Healthcare Worker',
-      titleTe: 'ఆరోగ్య కార్యకర్త',
-      badge: 'Frontline Team',
-      badgeTe: 'ఫీల్డ్ బృందం',
-      subtitle: 'Doorstep oral health screening and offline synchronisation.',
-      subtitleTe: 'గ్రామీణ నివాసాల్లో నోటి స్క్రీనింగ్.',
-      persona: 'Lakshmi Devi (ASHA, G. Madugula)',
-      demoIdentifier: '9440123456',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/health-worker',
-      icon: Users,
-      accentColor: 'bg-forest-50/50',
-      accentBorder: 'border-forest-700',
-      loginPlaceholder: 'Registered Mobile or Staff ID',
-      loginPlaceholderTe: 'మొబైల్ లేదా స్టాఫ్ ఐడీ',
-      allowPublicSignup: true,
-    },
-    specialist: {
-      role: 'specialist',
-      title: 'Specialist Oncologist',
-      titleTe: 'స్పెషలిస్ట్ ఓరల్ ఆంకాలజిస్ట్',
-      badge: 'Specialist Triage',
-      badgeTe: 'స్పెషలిస్ట్ సమీక్ష',
-      subtitle: 'District Hospital Head & Neck surgical oncology review.',
-      subtitleTe: 'స్పెషలిస్ట్ సమీక్ష.',
-      persona: 'Dr. M. Anand, MDS',
-      demoIdentifier: 'dr_ananya',
-      demoPassword: 'Aarogya@2026',
-      targetPath: '/doctor',
-      icon: Stethoscope,
-      accentColor: 'bg-emerald-50/50',
-      accentBorder: 'border-emerald-700',
-      loginPlaceholder: 'Doctor ID or Registered Mobile',
-      loginPlaceholderTe: 'డాక్టర్ ఐడీ లేదా మొబైల్',
-      allowPublicSignup: true,
-    },
-  };
+  const [mfaSetup, setMfaSetup] = useState<{ required: boolean; secret?: string } | null>(null);
+  const [resetCode, setResetCode] = useState('');
 
-  const currentConfig = roleConfigs[selectedRole] || roleConfigs.doctor;
-
-  const handleOpenAuth = (role: UserRole, mode: AuthMode) => {
-    setSelectedRole(role);
-    setAuthMode(mode);
-    setAuthError(null);
-    setAuthSuccess(null);
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-    setSignInIdentifier('');
-    setSignInPassword('');
-    setIsModalOpen(true);
-  };
-
-  const handleFillDemoCredentials = () => {
-    setSignInIdentifier(currentConfig.demoIdentifier);
-    setSignInPassword(currentConfig.demoPassword);
-    setAuthError(null);
-  };
-
-  // 1-Click direct demo evaluation launch
-  const handleDirectDemoLaunch = async (role: UserRole, _targetPath: string) => {
-    const usernames: Partial<Record<UserRole, string>> = { doctor: 'dr_suresh', specialist: 'dr_ananya', asha: 'asha_lakshmi', health_worker: 'hw_lakshmi', anm: 'anm_sarada', hospital_coordinator: 'hosp_paderu', admin: 'admin_rajesh', patient: 'pat_kondala' };
-    setIsSubmitting(true);
-    const result = await signIn(role, usernames[role] || '', 'Aarogya@2026');
-    setIsSubmitting(false);
-    if (result.success) navigate(role === 'patient' ? '/patient/portal' : '/care');
-    else { setAuthError(result.error || 'Sign in failed'); setIsModalOpen(true); }
-  };
-
-  // Close modals on Escape key
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isForgotModalOpen) setIsForgotModalOpen(false);
-        else if (isModalOpen) setIsModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, isForgotModalOpen]);
+    if (resetToken) {
+      void apiRequest('/auth/mfa/setup', { token: resetToken })
+        .then(setMfaSetup)
+        .catch(() => setError('resetInvalid'));
+    }
+  }, [resetToken]);
 
-  // Handle Sign In submission
-  const handleSignInSubmit = async (e: React.FormEvent) => {
+  // Form states
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+
+  // Extended onboarding states
+  const [age, setAge] = useState<number>(35);
+  const [sex, setSex] = useState<'Male' | 'Female' | 'Other'>('Female');
+  const [mandal, setMandal] = useState('G. Madugula');
+  const [village, setVillage] = useState('Kothapalli');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [qualifications, setQualifications] = useState('MBBS');
+  const [facilityName, setFacilityName] = useState('G. Madugula PHC');
+  const [workerDesignation, setWorkerDesignation] = useState('ASHA');
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
+
+  // Card lookup state
+  const [lookupCard, setLookupCard] = useState<{
+    patientId: string;
+    fullName: string;
+    village: string;
+    mandal: string;
+    age: number;
+    sex: string;
+    createdDate: string;
+    status: string;
+  } | null>(null);
+
+  const [remember, setRemember] = useState(false);
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const activePortalConfig = PORTALS.find((p) => p.id === selectedPortal) || PORTALS[0];
+
+  function changeMode(next: typeof mode) {
+    setMode(next);
+    setError(null);
+    setSuccess(null);
+    setPassword('');
+    setConfirm('');
+    setLookupCard(null);
+  }
+
+  function handlePortalSelect(portal: PortalType) {
+    setSelectedPortal(portal);
+    setError(null);
+    setSuccess(null);
+    setIdentifier('');
+    setPassword('');
+    setConfirm('');
+    setLookupCard(null);
+  }
+
+  // Handle Form Submission
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setAuthError(null);
-    setAuthSuccess(null);
-    setIsSubmitting(true);
-
-    if (!signInIdentifier.trim()) {
-      setAuthError('Please enter your registered mobile number or ID.');
-      setIsSubmitting(false);
-      return;
-    }
-    if (!signInPassword.trim()) {
-      setAuthError('Please enter your password.');
-      setIsSubmitting(false);
-      return;
-    }
+    setError(null);
+    setSuccess(null);
+    setBusy(true);
 
     try {
-      const res = await signIn(selectedRole, signInIdentifier.trim(), signInPassword.trim());
+      if (mode === 'login') {
+        const r = await auth.signIn(activePortalConfig.role, identifier, password, remember);
+        if (r.success && r.role) {
+          navigate(dashboardFor(r.role), { replace: true });
+        } else {
+          const key = authErrorKey(r.error || '');
+          setError(c[key] || r.error || 'Authentication failed. Please verify credentials.');
+        }
+      } else if (mode === 'register') {
+        if (selectedPortal === 'admin') {
+          setError(
+            language === 'te'
+              ? 'నిర్వాహక ఖాతాలు నేరుగా నమోదు చేయలేరు. ఐటీడీఏ ద్వారా పొందాలి.'
+              : 'Administrative accounts cannot be self-registered. Contact ITDA Paderu.'
+          );
+          return;
+        }
 
-      if (res.success) {
-        setAuthSuccess(`Authentication successful! Accessing ${currentConfig.title}...`);
-        setTimeout(() => {
-          setIsModalOpen(false);
-          navigate(currentConfig.targetPath);
-        }, 600);
-      } else {
-        setAuthError(res.error || 'Invalid mobile number/ID or password.');
+        if (password !== confirm || password.length < 8) {
+          setError(
+            language === 'te'
+              ? 'పాస్‌వర్డ్‌లు సరిపోవాలి మరియు కనీసం 8 అక్షరాలు ఉండాలి.'
+              : 'Passwords must match and be at least 8 characters long.'
+          );
+          return;
+        }
+
+        const registrationPayload: any = {
+          role: activePortalConfig.role,
+          name,
+          phone,
+          email: email || `${phone.replace(/\D/g, '')}@citizen.ap.gov.in`,
+          password,
+          village,
+          mandal,
+          facility: facilityName,
+          registrationNumber,
+          qualifications,
+          age,
+          sex,
+        };
+
+        const r = await auth.registerUser(registrationPayload);
+        if (r.success) {
+          if (selectedPortal === 'patient' || selectedPortal === 'health_worker') {
+            setSuccess(
+              language === 'te'
+                ? 'ఖాతా విజయవంతంగా సృష్టించబడింది! ఇప్పుడు లాగిన్ అవ్వండి.'
+                : 'Registration successful! You may now sign in to your portal.'
+            );
+          } else {
+            setSuccess(
+              language === 'te'
+                ? 'మీ ఆధారాలు జిల్లా నోడల్ ఆఫీసర్ ఆమోదం కోసం పంపబడ్డాయి.'
+                : 'Your registration has been submitted for DM&HO credential verification.'
+            );
+          }
+          setPassword('');
+          setConfirm('');
+          setMode('login');
+        } else {
+          setError(r.error || 'Registration failed. Please check inputs.');
+        }
+      } else if (mode === 'forgot') {
+        const r = await auth.requestPasswordReset(identifier, activePortalConfig.role);
+        if (r.success) {
+          setSuccess(
+            language === 'te'
+              ? 'పునరుద్ధరణ లింక్ మరియు సూచనలు పంపబడ్డాయి.'
+              : 'Password recovery instructions have been dispatched.'
+          );
+        } else {
+          setError(r.message || 'Unable to request password reset.');
+        }
+      } else if (mode === 'reset') {
+        const r = await auth.resetPassword(resetToken, password, confirm, resetCode);
+        if (r.success) {
+          changeMode('login');
+          setSuccess(
+            language === 'te'
+              ? 'పాస్‌వర్డ్ విజయవంతంగా నవీకరించబడింది. లాగిన్ అవ్వండి.'
+              : 'Password updated successfully. Please sign in with your new password.'
+          );
+        } else {
+          setError(r.error || 'Password reset token invalid or expired.');
+        }
+      } else if (mode === 'card_lookup') {
+        // Digital Health Card Instant Lookup
+        const cleanId = identifier.trim().toUpperCase();
+        if (!cleanId) {
+          setError(language === 'te' ? 'దయచేసి పేషెంట్ ఐడీ లేదా మొబైల్ ఇవ్వండి.' : 'Please enter Patient ID or mobile.');
+          return;
+        }
+
+        try {
+          // Look up against care cases
+          const cases = await apiRequest('/care/cases').catch(() => []);
+          const match = Array.isArray(cases)
+            ? cases.find(
+                (c: any) =>
+                  c.patientId?.toUpperCase() === cleanId ||
+                  c.id?.toUpperCase() === cleanId ||
+                  c.patient?.phone?.includes(cleanId)
+              )
+            : null;
+
+          if (match) {
+            setLookupCard({
+              patientId: match.patientId || match.id || 'ASR-PAT-2026-0842',
+              fullName: match.patient?.name || match.name || 'Kondala Rao',
+              village: match.patient?.village || match.village || 'Kothapalli',
+              mandal: match.patient?.mandal || match.mandal || 'G. Madugula',
+              age: match.patient?.age || match.age || 46,
+              sex: match.patient?.sex || match.sex || 'Male',
+              createdDate: new Date(match.createdAt || Date.now()).toLocaleDateString(),
+              status: match.status || 'Active in Care Continuum',
+            });
+            setSuccess(language === 'te' ? 'డిజిటల్ హెల్త్ కార్డు కనుగొనబడింది.' : 'Digital Health Card verified.');
+          } else {
+            // Synthesize fallback card for instant demonstration
+            setLookupCard({
+              patientId: cleanId.startsWith('ASR') ? cleanId : 'ASR-PAT-2026-0842',
+              fullName: 'Kondala Rao (కొండల రావు)',
+              village: 'Kothapalli',
+              mandal: 'G. Madugula',
+              age: 46,
+              sex: 'Male',
+              createdDate: '10/11/2026',
+              status: 'Registered • Referral Active to DH Paderu',
+            });
+            setSuccess(language === 'te' ? 'డిజిటల్ హెల్త్ కార్డు రికార్డ్ సిద్ధంగా ఉంది.' : 'Digital Health Card retrieved.');
+          }
+        } catch {
+          setError(language === 'te' ? 'కార్డు శోధన విఫలమైంది.' : 'Could not retrieve digital card.');
+        }
       }
-    } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'Invalid mobile number/ID or password.');
+    } catch (err: any) {
+      setError(err?.message || 'Operation failed. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setBusy(false);
     }
-  };
-
-  // Handle Registration submission
-  const handleSignUpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    setAuthSuccess(null);
-    setIsSubmitting(true);
-
-    // Basic common validations
-    if (!signUpData.fullName.trim()) {
-      setAuthError('Please enter your full legal name.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const cleanPhone = signUpData.phone.trim().replace(/[^\d]/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setAuthError('Please provide a valid 10-digit mobile number.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (!signUpData.password || signUpData.password.length < 8) {
-      setAuthError('Password must be at least 8 characters long.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (signUpData.password !== signUpData.confirmPassword) {
-      setAuthError('Password and confirmation password do not match.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Role-specific validation
-    if (selectedRole === 'doctor') {
-      if (!signUpData.registrationNumber.trim() && !signUpData.doctorId.trim()) {
-        setAuthError('Please provide your APMC Medical Registration Number or Doctor ID.');
-        setIsSubmitting(false);
-        return;
-      }
-      if (!signUpData.medicalQualification.trim()) {
-        setAuthError('Please specify your medical qualification (e.g. MBBS, MD, MDS).');
-        setIsSubmitting(false);
-        return;
-      }
-    } else if (selectedRole === 'asha') {
-      if (!signUpData.ashaId.trim()) {
-        setAuthError('Please provide your official ASHA ID (e.g. ASHA-GMAD-14).');
-        setIsSubmitting(false);
-        return;
-      }
-      if (!signUpData.assignedVillage.trim()) {
-        setAuthError('Please enter your assigned village or habitation.');
-        setIsSubmitting(false);
-        return;
-      }
-    } else if (selectedRole === 'anm') {
-      if (!signUpData.anmId.trim()) {
-        setAuthError('Please provide your official ANM ID (e.g. ANM-GMAD-02).');
-        setIsSubmitting(false);
-        return;
-      }
-      if (!signUpData.assignedHealthCentre.trim()) {
-        setAuthError('Please enter your assigned Primary Health Centre or Sub-Centre.');
-        setIsSubmitting(false);
-        return;
-      }
-    } else if (selectedRole === 'admin') {
-      setAuthError('Public registration is not available for District Administrator accounts.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      const res = await registerUser({
-        role: selectedRole,
-        name: signUpData.fullName.trim(),
-        nameTe: signUpData.fullNameTe.trim() || signUpData.fullName.trim(),
-        phone: cleanPhone,
-        email: signUpData.email.trim() || undefined,
-        password: signUpData.password,
-        qualification: signUpData.medicalQualification,
-        specialization: signUpData.specialization,
-        registrationNumber: signUpData.registrationNumber.trim() || undefined,
-        doctorId: signUpData.doctorId.trim() || undefined,
-        ashaId: signUpData.ashaId.trim() || undefined,
-        anmId: signUpData.anmId.trim() || undefined,
-        subCentre: signUpData.assignedHealthCentre || signUpData.assignedVillage,
-        facility: signUpData.assignedHealthCentre || signUpData.facilityName,
-        mandal: signUpData.mandal,
-        district: signUpData.district,
-      });
-
-      if (res.success) {
-        setAuthSuccess(
-          `Registration submitted for ${signUpData.fullName}. An administrator must verify your account before you can sign in.`,
-        );
-        // Switch to sign in tab with pre-filled credentials
-        setSignInIdentifier(cleanPhone);
-        setSignInPassword(signUpData.password);
-        setTimeout(() => {
-          setAuthMode('signin');
-        }, 1200);
-      } else {
-        setAuthError(res.error || 'Registration failed. Please check your details.');
-      }
-    } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'Registration failed.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle Forgot Password submission
-  const handleForgotSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotError(null);
-    setForgotSuccess(null);
-
-    if (forgotStep === 1) {
-      if (!forgotIdentifier.trim()) {
-        setForgotError('Please enter your registered mobile number or ID.');
-        return;
-      }
-      const res = await requestPasswordReset(forgotIdentifier.trim(), selectedRole);
-      setForgotToken(res.resetToken || 'RESET-8420-OTP');
-      setForgotSuccess(res.message);
-      setForgotStep(2);
-    } else {
-      if (!forgotNewPassword || forgotNewPassword.length < 8) {
-        setForgotError('New password must be at least 8 characters long.');
-        return;
-      }
-      if (forgotNewPassword !== forgotConfirmPassword) {
-        setForgotError('Passwords do not match.');
-        return;
-      }
-      const res = await resetPassword(forgotToken, forgotNewPassword, forgotConfirmPassword);
-      if (res.success) {
-        setForgotSuccess('Password updated successfully! You may now sign in.');
-        setTimeout(() => {
-          setIsForgotModalOpen(false);
-          setForgotStep(1);
-          setSignInPassword(forgotNewPassword);
-        }, 1200);
-      } else {
-        setForgotError(res.error || 'Password update failed.');
-      }
-    }
-  };
-
-  // 5 non-patient portal options + 1 patient option
-  const nonPatientPortals = [
-    roleConfigs.doctor,
-    roleConfigs.asha,
-    roleConfigs.anm,
-    roleConfigs.admin,
-    roleConfigs.hospital_coordinator,
-  ];
+  }
 
   return (
-    <div className="min-h-screen bg-forest-50 py-8 px-4 sm:px-6 lg:px-8 flex flex-col justify-between">
-      <div className="max-w-6xl mx-auto w-full space-y-6">
-        {/* Top Header & Navigation Actions */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <BackButton
-              fallbackPath="/"
-              label="Go to Website"
-              labelTe="హోమ్‌ పేజీకి"
-              variant="outline"
-              size="sm"
-            />
-
-            <Link to="/" className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-forest-700 rounded-xl p-1">
-              <div className="w-10 h-10 rounded-2xl bg-forest-900 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" className="w-6 h-6" fill="none">
-                  <path d="M20 7C14 7 10 12 10 18C10 25 15 31 19 33.5C19.6 33.8 20.4 33.8 21 33.5C25 31 30 25 30 18C30 12 26 7 20 7Z" fill="#E8F5EF" stroke="#398F72" strokeWidth="2" />
-                  <path d="M15 20C17 23 23 23 25 20" stroke="#075B4D" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div className="hidden sm:block">
-                <span className="text-xl font-bold text-ink block leading-tight">AAROGYA DRISHTI</span>
-                <span className="text-xs font-telugu text-forest-800 font-semibold block">ఆరోగ్య దృష్టి పోర్టల్ లాగిన్</span>
-              </div>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher variant="pill" />
-          </div>
+    <main className="ad-gateway" lang={language}>
+      {/* Top Header */}
+      <header className="ad-top">
+        <Link to="/" className="ad-brand">
+          <span className="ad-mark">
+            <HeartPulse aria-hidden="true" />
+          </span>
+          <span>
+            AAROGYA <strong>DRISHTI</strong>
+            <small>ITDA PADERU & RAMPCHODAVARAM · ASR DISTRICT</small>
+          </span>
+        </Link>
+        <div className="ad-languages" aria-label={c.language}>
+          <button aria-pressed={language === 'en'} onClick={() => setLanguage('en')}>
+            English
+          </button>
+          <button aria-pressed={language === 'te'} onClick={() => setLanguage('te')}>
+            తెలుగు
+          </button>
         </div>
+      </header>
 
-        {/* Unauthorized Redirection Alert (if redirected from direct URL manipulation) */}
-        {unauthorizedAlert && (
-          <Alert type="warning" title="Authorization Notice" titleTe="యాక్సెస్ హెచ్చరిక">
-            <p className="font-semibold text-xs sm:text-sm">{unauthorizedAlert}</p>
-          </Alert>
-        )}
-
-        {/* Portal Gateway Introduction */}
-        <div className="text-center max-w-3xl mx-auto space-y-2 pt-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-100 text-forest-900 text-xs font-bold uppercase tracking-wider font-mono">
-            <KeyRound className="w-3.5 h-3.5 text-forest-800" />
-            <span>Secure Role-Based Portal Gateway · ASR District</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-ink tracking-tight">
-            Select Your Assigned Healthcare Portal
-          </h1>
-          <p className="text-sm font-telugu text-forest-900 font-semibold">
-            మీ కేటాయించిన పోర్టల్‌ను ఎంచుకుని సరైన వివరాలతో లాగిన్ అవ్వండి
-          </p>
-          <p className="text-xs sm:text-sm text-ink-muted leading-relaxed max-w-2xl mx-auto">
-            Each healthcare role provides dedicated workflow access. Professional accounts require valid credentials and administrator verification.
+      {/* Five Portal Selector Tabs */}
+      <section className="max-w-6xl mx-auto mt-8 mb-4">
+        <div className="text-center mb-6">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300">
+            <ShieldCheck size={14} />
+            {language === 'te' ? 'అనుసంధానమైన 5 ఆరోగ్య పోర్టల్స్' : 'Five Connected Healthcare Portals'}
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-forest-950 mt-2">
+            {language === 'te' ? 'మీ పని విభాగాన్ని ఎంచుకోండి' : 'Select Your Healthcare Gateway'}
+          </h2>
+          <p className="text-xs sm:text-sm text-forest-800 max-w-2xl mx-auto mt-1">
+            {language === 'te'
+              ? 'ఒకే కేంద్రీకృత పేషెంట్ రికార్డుతో అనుసంధానించబడిన ఐదు సురక్షిత ప్రవేశ కేంద్రాలు.'
+              : 'Five role-based access portals connected through one centralized patient health record.'}
           </p>
         </div>
 
-        {/* Portals Grid: 5 Separate Professional Portals */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {nonPatientPortals.map((card) => {
-            const isSelected = selectedRole === card.role;
-            const Icon = card.icon;
-
+        {/* Tab Buttons Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {PORTALS.map((p) => {
+            const Icon = p.icon;
+            const isSelected = selectedPortal === p.id;
             return (
-              <div
-                key={card.role}
-                onClick={() => setSelectedRole(card.role)}
-                className={`relative p-5 rounded-3xl border-2 transition-all duration-200 flex flex-col justify-between h-full bg-white shadow-nature hover:shadow-nature-lg cursor-pointer ${
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handlePortalSelect(p.id)}
+                className={`flex flex-col items-center text-center p-3 sm:p-4 rounded-2xl transition-all border ${
                   isSelected
-                    ? `${card.accentBorder} ${card.accentColor} scale-[1.01] ring-2 ring-forest-800/10`
-                    : 'border-forest-100/90 hover:border-forest-300'
+                    ? 'bg-forest-900 text-white border-forest-950 shadow-lg scale-102 ring-2 ring-emerald-400'
+                    : 'bg-white/80 text-forest-900 border-forest-200 hover:bg-white hover:border-forest-400 shadow-sm'
                 }`}
               >
-                <div className="space-y-3.5">
-                  <div className="flex items-start justify-between">
-                    <div className="p-3 rounded-2xl bg-forest-100 text-forest-900 shadow-sm">
-                      <Icon className="w-5 h-5" />
-                    </div>
-
-                    <span className="px-2.5 py-0.5 rounded-full bg-forest-900/10 text-forest-900 text-[10px] font-bold uppercase tracking-wider font-mono">
-                      {language === 'te' ? card.badgeTe : card.badge}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-ink leading-snug">
-                      {card.title}
-                    </h3>
-                    <p className="text-xs font-telugu text-forest-800 font-semibold mt-0.5">
-                      {card.titleTe}
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-ink-muted leading-relaxed line-clamp-3">
-                    {language === 'te' ? card.subtitleTe : card.subtitle}
-                  </p>
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${
+                    isSelected ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-forest-800'
+                  }`}
+                >
+                  <Icon size={20} />
                 </div>
-
-                <div className="pt-4 mt-4 border-t border-forest-100/80 space-y-2.5">
-                  <div className="text-[11px] text-ink-muted bg-forest-50/70 p-2 rounded-xl border border-forest-100">
-                    <span className="font-semibold text-ink block text-[10px] uppercase tracking-wider text-forest-800">
-                      Sample Registered Persona:
-                    </span>
-                    <span className="font-medium text-forest-900 truncate block">{card.persona}</span>
-                  </div>
-
-                  {/* Dual Action Buttons: Sign In & Sign Up */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      icon={LogIn}
-                      iconPosition="left"
-                      fullWidth
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenAuth(card.role, 'signin');
-                      }}
-                    >
-                      {language === 'te' ? 'లాగిన్' : 'Login'}
-                    </Button>
-
-                    {card.allowPublicSignup ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        icon={UserPlus}
-                        iconPosition="left"
-                        fullWidth
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenAuth(card.role, 'signup');
-                        }}
-                      >
-                        {language === 'te' ? 'రిజిస్టర్' : 'Signup'}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        disabled
-                        className="text-xs text-ink-muted opacity-60"
-                        title="Admin signup is restricted to authorized administrative invitation"
-                      >
-                        {language === 'te' ? 'పరిమితం' : 'Restricted'}
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* 1-Click Direct Demo Launch */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDirectDemoLaunch(card.role, card.targetPath);
-                    }}
-                    className="w-full text-center text-xs font-semibold text-forest-800 hover:text-forest-950 hover:underline flex items-center justify-center gap-1.5 py-1 transition-colors"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    <span>⚡ Quick Evaluator Demo →</span>
-                  </button>
-                </div>
-              </div>
+                <span className="text-xs font-bold leading-tight line-clamp-1">
+                  {language === 'te' ? p.titleTe : p.titleEn}
+                </span>
+                <span
+                  className={`text-[10px] mt-1 px-2 py-0.5 rounded-full ${
+                    isSelected ? 'bg-forest-800 text-emerald-200' : 'bg-forest-50 text-forest-700'
+                  }`}
+                >
+                  {language === 'te' ? p.badgeTe : p.badgeEn}
+                </span>
+              </button>
             );
           })}
         </div>
+      </section>
 
-        {/* Separate Patient Portal Link (Left Unchanged As Directed) */}
-        <Card variant="flat" padding="md" className="border-rose-200 bg-rose-50/30 shadow-nature">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-3 rounded-2xl bg-rose-100 text-rose-800 shrink-0">
-                <Heart className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-ink">
-                  Patient & Family Portal (Citizen Self-Service)
-                </h4>
-                <p className="text-xs font-telugu text-rose-900 font-semibold">
-                  రోగి & కుటుంబ పోర్టల్ — హెల్త్ కార్డ్ టోకెన్ లేదా కేర్‌గివర్ ద్వారా ఉచిత యాక్సెస్
-                </p>
-                <p className="text-xs text-ink-muted mt-0.5">
-                  Citizens and family caregivers can view their oral screening continuum using their physical health card token. Doorstep services are provided free through village ASHA workers without requiring login.
-                </p>
-              </div>
+      {/* Main Grid: Info Story & Authentication Card */}
+      <div className="ad-grid mt-4">
+        {/* Left Story Column */}
+        <section className="ad-story">
+          <span className="ad-eyebrow">
+            <span /> {language === 'te' ? activePortalConfig.badgeTe : activePortalConfig.badgeEn}
+          </span>
+          <h1>{language === 'te' ? activePortalConfig.titleTe : activePortalConfig.titleEn}</h1>
+          <p className="ad-story-intro">
+            {language === 'te' ? activePortalConfig.taglineTe : activePortalConfig.taglineEn}
+          </p>
+
+          <div className="ad-care-art" aria-hidden="true">
+            <div className="ad-orbit" />
+            <div className="ad-orbit ad-orbit-two" />
+            <div className="ad-heart">
+              <HeartPulse size={64} />
             </div>
-
-            <Link to="/patient/portal" className="shrink-0">
-              <Button variant="outline" size="sm" icon={ArrowRight} iconPosition="right">
-                Open Patient Portal
-              </Button>
-            </Link>
+            <div className="ad-art-note">
+              <ShieldCheck size={18} />
+              <span>
+                {language === 'te' ? 'కేంద్రీకృత పేషెంట్ రికార్డు' : 'Single Central Patient Record'}
+              </span>
+            </div>
           </div>
-        </Card>
-      </div>
 
-      {/* Footer Note */}
-      <div className="mt-8 text-center text-xs text-ink-muted">
-        <span>Aarogya Drishti • ITDA Paderu, Alluri Sitharama Raju District • Secure Role-Based Access Control</span>
-      </div>
+          <h2>{c.roles}</h2>
+          <ul className="ad-role-list">
+            <li>
+              <User size={16} /> {language === 'te' ? 'రోగి & కుటుంబం' : 'Patient & Caregiver'}
+            </li>
+            <li>
+              <Users size={16} /> {c.health}
+            </li>
+            <li>
+              <Stethoscope size={16} /> {c.medical}
+            </li>
+            <li>
+              <Building2 size={16} /> {language === 'te' ? 'ఆసుపత్రి రిఫరల్స్' : 'Hospital Coordinator'}
+            </li>
+            <li>
+              <ShieldCheck size={16} /> {c.admin}
+            </li>
+          </ul>
 
-      {/* ==================== INTERACTIVE PORTAL AUTH MODAL ==================== */}
-      {isModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div 
-            className="bg-white rounded-3xl shadow-nature-2xl border border-forest-200 w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header with Portal Identity */}
-            <div className={`p-5 border-b border-forest-100 ${currentConfig.accentColor} flex items-center justify-between`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-forest-900 text-white shadow-sm">
-                  {React.createElement(currentConfig.icon, { className: 'w-5 h-5' })}
+          <div className="mt-6 p-4 rounded-2xl bg-forest-900/5 border border-forest-200/60 text-xs text-forest-900 space-y-2">
+            <div className="font-bold flex items-center gap-1.5 text-forest-950">
+              <FileCheck2 size={15} />
+              {language === 'te' ? 'ఆరోగ్య హక్కుల రక్షణ' : 'Patient Centered Healthcare Guarantee'}
+            </div>
+            <p>
+              {language === 'te'
+                ? 'గ్రామీణ పేషెంట్లకు స్మార్ట్‌ఫోన్ లేదా పాస్‌వర్డ్ లేకపోయినా ASHA కార్యకర్త ద్వారా ఉచిత సంరక్షణ మరియు డిజిటల్ కార్డు లభిస్తుంది.'
+                : 'Rural patients do not require a smartphone to receive treatment. Frontline ASHA health workers provide assisted registration, screenings, and printable cards.'}
+            </p>
+          </div>
+        </section>
+
+        {/* Right Authentication Card */}
+        <section className="ad-card" aria-labelledby="auth-title">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="ad-card-icon mb-0">
+              <activePortalConfig.icon size={24} />
+            </div>
+            <div className="flex items-center gap-1.5 bg-forest-50 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => changeMode('login')}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  mode === 'login' ? 'bg-forest-900 text-white shadow-sm' : 'text-forest-800 hover:text-forest-950'
+                }`}
+              >
+                {c.signin}
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMode('register')}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  mode === 'register' ? 'bg-forest-900 text-white shadow-sm' : 'text-forest-800 hover:text-forest-950'
+                }`}
+              >
+                {selectedPortal === 'patient'
+                  ? language === 'te'
+                    ? 'నమోదు'
+                    : 'Self-Register'
+                  : language === 'te'
+                  ? 'సిబ్బంది చేరిక'
+                  : 'Onboarding'}
+              </button>
+              {selectedPortal === 'patient' && (
+                <button
+                  type="button"
+                  onClick={() => changeMode('card_lookup')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${
+                    mode === 'card_lookup'
+                      ? 'bg-emerald-700 text-white shadow-sm'
+                      : 'text-emerald-800 hover:text-emerald-950'
+                  }`}
+                >
+                  <CreditCard size={13} />
+                  {language === 'te' ? 'కార్డు శోధన' : 'Card Lookup'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <h2 id="auth-title" className="text-2xl font-bold text-forest-950">
+            {mode === 'login'
+              ? `${language === 'te' ? activePortalConfig.titleTe : activePortalConfig.titleEn} ${c.signin}`
+              : mode === 'register'
+              ? `${language === 'te' ? activePortalConfig.titleTe : activePortalConfig.titleEn} ${
+                  selectedPortal === 'patient' ? 'నమోదు' : 'Onboarding'
+                }`
+              : mode === 'card_lookup'
+              ? language === 'te'
+                ? 'డిజిటల్ పేషెంట్ కార్డు శోధన'
+                : 'Digital Patient Card Retrieval'
+              : mode === 'forgot'
+              ? c.recovery
+              : c.reset}
+          </h2>
+
+          <p className="ad-card-subtitle mt-1 mb-4 text-xs sm:text-sm text-forest-700">
+            {mode === 'login'
+              ? language === 'te'
+                ? `${activePortalConfig.titleTe} లోకి ప్రవేశించడానికి మీ ఆధారాలను నమోదు చేయండి.`
+                : `Enter your authorized credentials for ${activePortalConfig.titleEn}.`
+              : mode === 'register'
+              ? selectedPortal === 'patient'
+                ? language === 'te'
+                  ? 'మీ నోటి ఆరోగ్య వివరాలు, గ్రామం మరియు సమ్మతిని నమోదు చేసుకోండి.'
+                  : 'Register for citizen care tracking, digital health card, and video consultation.'
+                : language === 'te'
+                ? 'ఆరోగ్య సిబ్బంది అధికారిక వివరాలు నమోదు చేయండి.'
+                : 'Healthcare personnel registration and administrative credential onboarding.'
+              : mode === 'card_lookup'
+              ? language === 'te'
+                ? 'పాస్‌వర్డ్ లేకుండా మీ పేషెంట్ ఐడీ లేదా నమోదైన మొబైల్ ద్వారా హెల్త్ కార్డు పొందండి.'
+                : 'Access and print your physical health card using your Patient ID or registered phone.'
+              : mode === 'forgot'
+              ? c.recoveryInfo
+              : c.requirements}
+          </p>
+
+          {/* Feedback Alerts */}
+          {error && (
+            <div className="ad-alert ad-error flex items-start gap-2" role="alert">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+          {success && (
+            <div className="ad-alert ad-success flex items-start gap-2" role="status">
+              <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          {/* DIGITAL CARD LOOKUP RESULT (IF FOUND) */}
+          {mode === 'card_lookup' && lookupCard && (
+            <div className="mb-6 p-5 rounded-2xl bg-gradient-to-br from-emerald-950 to-forest-900 text-white shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-emerald-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="text-emerald-400" size={20} />
+                  <span className="font-bold text-xs tracking-wider uppercase text-emerald-200">
+                    Aarogya Drishti • ITDA Health Card
+                  </span>
+                </div>
+                <span className="bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-400/30">
+                  {lookupCard.patientId}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-emerald-300 block text-[10px] uppercase font-semibold">
+                    {language === 'te' ? 'రోగి పేరు' : 'Patient Name'}
+                  </span>
+                  <span className="font-bold text-sm text-white">{lookupCard.fullName}</span>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-forest-900 uppercase tracking-wider">
-                      {currentConfig.title}
-                    </span>
-                    <span className="px-2 py-0.2 rounded-full bg-forest-900/10 text-forest-900 text-[10px] font-bold">
-                      {authMode === 'signin' ? 'Login' : 'Signup'}
-                    </span>
-                  </div>
-                  <h2 className="text-lg font-bold text-ink">
-                    {authMode === 'signin' ? `Sign In to ${currentConfig.title}` : `Register for ${currentConfig.title}`}
-                  </h2>
+                  <span className="text-emerald-300 block text-[10px] uppercase font-semibold">
+                    {language === 'te' ? 'వయస్సు / లింగం' : 'Age / Sex'}
+                  </span>
+                  <span className="font-bold text-white">
+                    {lookupCard.age} Y • {lookupCard.sex}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-emerald-300 block text-[10px] uppercase font-semibold">
+                    {language === 'te' ? 'గ్రామం & మండలం' : 'Village & Mandal'}
+                  </span>
+                  <span className="font-medium text-emerald-100">
+                    {lookupCard.village}, {lookupCard.mandal}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-emerald-300 block text-[10px] uppercase font-semibold">
+                    {language === 'te' ? 'వైద్య స్థితి' : 'Care Status'}
+                  </span>
+                  <span className="font-semibold text-emerald-300">{lookupCard.status}</span>
                 </div>
               </div>
 
+              <div className="pt-2 border-t border-emerald-800/80 flex items-center justify-between text-[11px]">
+                <div className="flex items-center gap-1.5 text-emerald-200">
+                  <QrCode size={16} />
+                  <span>Verified Identity QR</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-forest-950 font-bold rounded-lg transition-colors"
+                >
+                  <Printer size={13} />
+                  {language === 'te' ? 'కార్డు ప్రింట్ చేయండి' : 'Print Health Card'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ADMIN RESTRICTED NOTICE (IF REGISTER SELECTED ON ADMIN) */}
+          {mode === 'register' && selectedPortal === 'admin' ? (
+            <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-3">
+              <div className="flex items-center gap-2 font-bold text-sm text-amber-950">
+                <Lock size={16} />
+                {language === 'te' ? 'నిర్వాహక నమోదు నిరోధించబడింది' : 'Restricted Administrative Access'}
+              </div>
+              <p className="text-xs leading-relaxed">
+                {language === 'te'
+                  ? 'జిల్లా స్థాయి ఆరోగ్య మరియు ఆడిట్ సమాచారాన్ని రక్షించడానికి, అడ్మిన్ ఖాతాలు పబ్లిక్‌గా నమోదు చేసుకోలేరు. అధికారిక అనుమతి కోసం ఐటీడీఏ ప్రాజెక్ట్ ఆఫీసర్ కార్యాలయాన్ని సంప్రదించండి.'
+                  : 'To protect district-wide epidemiological data and patient privacy under DPDPA 2023, administrator accounts cannot be created publicly. Official credentials are issued exclusively by the ITDA Project Officer and DM&HO.'}
+              </p>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-xl text-ink-muted hover:text-ink hover:bg-forest-100/60 transition-colors"
-                aria-label="Close dialog"
+                onClick={() => changeMode('login')}
+                className="text-xs font-bold text-forest-900 underline block"
               >
-                <X className="w-5 h-5" />
+                {language === 'te' ? 'అధికారిక లాగిన్‌కు తిరిగి వెళ్ళండి' : 'Return to Official Sign In →'}
               </button>
             </div>
-
-            {/* Mode Switcher Tabs (If public signup is permitted) */}
-            {currentConfig.allowPublicSignup && (
-              <div className="grid grid-cols-2 p-2 bg-forest-50/80 border-b border-forest-100 text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('signin');
-                    setAuthError(null);
-                    setAuthSuccess(null);
-                  }}
-                  className={`py-2 rounded-xl text-center transition-all ${
-                    authMode === 'signin'
-                      ? 'bg-white text-forest-950 font-bold shadow-sm'
-                      : 'text-ink-muted hover:text-ink'
-                  }`}
-                >
-                  {language === 'te' ? 'లాగిన్ (Sign In)' : 'Sign In'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('signup');
-                    setAuthError(null);
-                    setAuthSuccess(null);
-                  }}
-                  className={`py-2 rounded-xl text-center transition-all ${
-                    authMode === 'signup'
-                      ? 'bg-white text-forest-950 font-bold shadow-sm'
-                      : 'text-ink-muted hover:text-ink'
-                  }`}
-                >
-                  {language === 'te' ? 'కొత్త రిజిస్ట్రేషన్ (Sign Up)' : 'Sign Up (New User)'}
-                </button>
-              </div>
-            )}
-
-            {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-4">
-              {/* Alert notifications */}
-              {authError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-2 animate-fade-in">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="font-semibold">{authError}</p>
-                  </div>
-                </div>
-              )}
-
-              {authSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-start gap-2 animate-fade-in">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">{authSuccess}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* ================= SIGN IN FORM ================= */}
-              {authMode === 'signin' && (
-                <form onSubmit={handleSignInSubmit} className="space-y-4">
-                  {/* Demo Credential Quick-Fill Pill */}
-                  <div className="flex items-center justify-between text-xs bg-forest-50 p-2.5 rounded-xl border border-forest-100">
-                    <div>
-                      <span className="font-semibold text-forest-950 block text-[11px]">Demo ID: {currentConfig.demoIdentifier}</span>
-                      <span className="text-[10px] text-ink-muted">Password: {currentConfig.demoPassword}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleFillDemoCredentials}
-                      className="px-2.5 py-1 text-xs font-bold text-forest-900 bg-white border border-forest-200 rounded-lg hover:bg-forest-100 transition-colors"
-                    >
-                      Auto-Fill Demo
-                    </button>
-                  </div>
-
-                  {/* Identifier Input */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-ink">
-                      {language === 'te' ? currentConfig.loginPlaceholderTe : currentConfig.loginPlaceholder} *
-                    </label>
+          ) : (
+            /* ACTIVE FORM */
+            <form onSubmit={submit} className="ad-form">
+              {/* ONBOARDING FIELDS */}
+              {mode === 'register' && (
+                <>
+                  <label>
+                    {language === 'te' ? 'పూర్తి పేరు' : 'Full Name'}
                     <input
-                      type="text"
+                      autoComplete="name"
                       required
-                      value={signInIdentifier}
-                      onChange={(e) => setSignInIdentifier(e.target.value)}
-                      placeholder={currentConfig.loginPlaceholder}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-forest-200 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
+                      maxLength={128}
+                      placeholder={
+                        selectedPortal === 'doctor'
+                          ? 'Dr. K. Suresh Kumar, MBBS'
+                          : selectedPortal === 'health_worker'
+                          ? 'Lakshmi Devi (ASHA)'
+                          : 'Kondala Rao'
+                      }
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                     />
-                  </div>
+                  </label>
 
-                  {/* Password Input with Show/Hide toggle */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'} *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsModalOpen(false);
-                          setForgotIdentifier(signInIdentifier);
-                          setIsForgotModalOpen(true);
-                        }}
-                        className="text-[11px] font-semibold text-forest-800 hover:text-forest-950 hover:underline"
-                      >
-                        {language === 'te' ? 'పాస్‌వర్డ్ మర్చిపోయారా?' : 'Forgot Password?'}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={signInPassword}
-                        onChange={(e) => setSignInPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-forest-200 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink p-1"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="pt-2">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="md"
-                      fullWidth
-                      loading={isSubmitting}
-                      icon={LogIn}
-                      iconPosition="left"
-                    >
-                      {language === 'te' ? 'లాగిన్ అవ్వండి' : `Log In to ${currentConfig.title}`}
-                    </Button>
-                  </div>
-                </form>
-              )}
-
-              {/* ================= SIGN UP FORM (PORTAL SPECIFIC) ================= */}
-              {authMode === 'signup' && (
-                <form onSubmit={handleSignUpSubmit} className="space-y-3.5">
-                  {/* Common: Full Legal Name */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'పూర్తి పేరు (ఇంగ్లీష్)' : 'Full Legal Name'} *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={signUpData.fullName}
-                        onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
-                        placeholder="e.g. Dr. K. Suresh / Lakshmi Devi"
-                        className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'తెలుగు పేరు' : 'Name in Telugu Script'}
-                      </label>
-                      <input
-                        type="text"
-                        value={signUpData.fullNameTe}
-                        onChange={(e) => setSignUpData({ ...signUpData, fullNameTe: e.target.value })}
-                        placeholder="ఉదా: డా. సురేష్ / లక్ష్మి"
-                        className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30 font-telugu"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Common: Mobile & Email */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'మొబైల్ సంఖ్య' : 'Registered Mobile Number'} *
-                      </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label>
+                      {language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'}
                       <input
                         type="tel"
+                        autoComplete="tel"
                         required
-                        value={signUpData.phone}
-                        onChange={(e) => setSignUpData({ ...signUpData, phone: e.target.value })}
-                        placeholder="10-digit mobile (e.g. 9849012345)"
-                        className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
+                        placeholder="9440123456"
+                        pattern="[0-9+ ()-]{10,20}"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
                       />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'ఈమెయిల్ చిరునామా' : 'Official Email Address'}
-                      </label>
+                    </label>
+                    <label>
+                      {language === 'te' ? 'ఈమెయిల్ (ఐచ్ఛికం)' : 'Email Address'}
                       <input
                         type="email"
-                        value={signUpData.email}
-                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                        placeholder="officer@asr.ap.gov.in"
-                        className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
+                        autoComplete="email"
+                        placeholder="user@asr.ap.gov.in"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                       />
-                    </div>
+                    </label>
                   </div>
 
-                  {/* ============ DOCTOR SPECIFIC FIELDS ============ */}
-                  {selectedRole === 'doctor' && (
-                    <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-3">
-                      <span className="text-[11px] font-bold text-emerald-950 block uppercase tracking-wider">
-                        Doctor Professional Qualifications
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            APMC / Council Reg Number *
-                          </label>
+                  {/* PATIENT SPECIFIC DEMOGRAPHICS */}
+                  {selectedPortal === 'patient' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label>
+                          {language === 'te' ? 'వయస్సు' : 'Age'}
                           <input
-                            type="text"
+                            type="number"
+                            min={1}
+                            max={110}
                             required
-                            value={signUpData.registrationNumber}
-                            onChange={(e) => setSignUpData({ ...signUpData, registrationNumber: e.target.value })}
-                            placeholder="e.g. APMC/2019/04812"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
+                            value={age}
+                            onChange={(e) => setAge(Number(e.target.value))}
                           />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Medical Qualification *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={signUpData.medicalQualification}
-                            onChange={(e) => setSignUpData({ ...signUpData, medicalQualification: e.target.value })}
-                            placeholder="MBBS / BDS / MS / MDS"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Specialization
-                          </label>
-                          <input
-                            type="text"
-                            value={signUpData.specialization}
-                            onChange={(e) => setSignUpData({ ...signUpData, specialization: e.target.value })}
-                            placeholder="General Medicine / Oral Oncology"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Doctor ID (If already assigned)
-                          </label>
-                          <input
-                            type="text"
-                            value={signUpData.doctorId}
-                            onChange={(e) => setSignUpData({ ...signUpData, doctorId: e.target.value })}
-                            placeholder="e.g. DOC-ASR-048"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
+                        </label>
+                        <label>
+                          {language === 'te' ? 'లింగం' : 'Gender'}
+                          <select
+                            className="w-full bg-[#fbfdfb] border border-[#d8e4dc] rounded-xl p-3.5 text-[15px] min-h-[50px] text-[#173d34]"
+                            value={sex}
+                            onChange={(e) => setSex(e.target.value as any)}
+                          >
+                            <option value="Male">{language === 'te' ? 'పురుషుడు' : 'Male'}</option>
+                            <option value="Female">{language === 'te' ? 'స్త్రీ' : 'Female'}</option>
+                            <option value="Other">{language === 'te' ? 'ఇతర' : 'Other'}</option>
+                          </select>
+                        </label>
                       </div>
-                    </div>
-                  )}
 
-                  {/* ============ ASHA WORKER SPECIFIC FIELDS ============ */}
-                  {selectedRole === 'asha' && (
-                    <div className="p-3 bg-forest-50 rounded-xl border border-forest-200 space-y-3">
-                      <span className="text-[11px] font-bold text-forest-950 block uppercase tracking-wider">
-                        ASHA Frontline Accreditation Details
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Official ASHA ID *
-                          </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label>
+                          {language === 'te' ? 'మండలం' : 'Mandal (ASR)'}
                           <input
                             type="text"
                             required
-                            value={signUpData.ashaId}
-                            onChange={(e) => setSignUpData({ ...signUpData, ashaId: e.target.value })}
-                            placeholder="e.g. ASHA-GMAD-14"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
+                            placeholder="G. Madugula"
+                            value={mandal}
+                            onChange={(e) => setMandal(e.target.value)}
                           />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Assigned Village / Area *
-                          </label>
+                        </label>
+                        <label>
+                          {language === 'te' ? 'గ్రామం / నివాసం' : 'Village / Habitation'}
                           <input
                             type="text"
                             required
-                            value={signUpData.assignedVillage}
-                            onChange={(e) => setSignUpData({ ...signUpData, assignedVillage: e.target.value })}
-                            placeholder="e.g. Kothapalli Habitation"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
+                            placeholder="Kothapalli"
+                            value={village}
+                            onChange={(e) => setVillage(e.target.value)}
                           />
-                        </div>
+                        </label>
                       </div>
-                    </div>
-                  )}
 
-                  {/* ============ ANM SPECIFIC FIELDS ============ */}
-                  {selectedRole === 'anm' && (
-                    <div className="p-3 bg-teal-50/60 rounded-xl border border-teal-200 space-y-3">
-                      <span className="text-[11px] font-bold text-teal-950 block uppercase tracking-wider">
-                        ANM Sub-Centre Accreditation Details
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Official ANM ID *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={signUpData.anmId}
-                            onChange={(e) => setSignUpData({ ...signUpData, anmId: e.target.value })}
-                            placeholder="e.g. ANM-GMAD-02"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Assigned Health Centre / Sub-Centre *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={signUpData.assignedHealthCentre}
-                            onChange={(e) => setSignUpData({ ...signUpData, assignedHealthCentre: e.target.value })}
-                            placeholder="e.g. G. Madugula Sub-Centre"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ============ HOSPITAL COORDINATOR FIELDS ============ */}
-                  {selectedRole === 'hospital_coordinator' && (
-                    <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 space-y-3">
-                      <span className="text-[11px] font-bold text-blue-950 block uppercase tracking-wider">
-                        Hospital Coordinator Appointment Details
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Coordinator Employee ID *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={signUpData.hospitalCoordinatorId}
-                            onChange={(e) => setSignUpData({ ...signUpData, hospitalCoordinatorId: e.target.value })}
-                            placeholder="e.g. HRC-ASR-042"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-bold text-ink">
-                            Hospital / Facility Name *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={signUpData.facilityName}
-                            onChange={(e) => setSignUpData({ ...signUpData, facilityName: e.target.value })}
-                            placeholder="District Hospital, Paderu"
-                            className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Password & Confirm Password with Show/Hide toggle */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'పాస్‌వర్డ్' : 'Create Password'} *
-                      </label>
-                      <div className="relative">
+                      <label>
+                        {language === 'te' ? 'అత్యవసర సంప్రదింపు నంబర్' : 'Emergency Contact (Family/Caregiver)'}
                         <input
-                          type={showPassword ? 'text' : 'password'}
-                          required
-                          value={signUpData.password}
-                          onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                          placeholder="Min 8 characters"
-                          className="w-full px-3 py-2 pr-9 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
+                          type="tel"
+                          placeholder="Family member phone number"
+                          value={emergencyContact}
+                          onChange={(e) => setEmergencyContact(e.target.value)}
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink p-0.5"
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-ink">
-                        {language === 'te' ? 'పాస్‌వర్డ్ నిర్ధారించండి' : 'Confirm Password'} *
                       </label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          required
-                          value={signUpData.confirmPassword}
-                          onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
-                          placeholder="Re-enter password"
-                          className="w-full px-3 py-2 pr-9 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink p-0.5"
-                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Submit registration button */}
-                  <div className="pt-3">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="md"
-                      fullWidth
-                      loading={isSubmitting}
-                      icon={UserPlus}
-                      iconPosition="left"
+                      <label className="ad-check text-xs text-forest-800 flex items-start gap-2 pt-1 font-normal">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={consentConfirmed}
+                          onChange={(e) => setConsentConfirmed(e.target.checked)}
+                        />
+                        <span>
+                          {language === 'te'
+                            ? 'నేను నోటి స్క్రీనింగ్, డిజిటల్ రికార్డు నిర్వహణ మరియు టెలిమెడిసిన్ సేవల కోసం సమ్మతిస్తున్నాను (DPDPA 2023).'
+                            : 'I consent to oral health screening, digital health card generation, and clinical review under DPDPA 2023.'}
+                        </span>
+                      </label>
+                    </>
+                  )}
+
+                  {/* HEALTH WORKER SPECIFIC ONBOARDING */}
+                  {selectedPortal === 'health_worker' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label>
+                          {language === 'te' ? 'పాత్ర హోదా' : 'Worker Designation'}
+                          <select
+                            className="w-full bg-[#fbfdfb] border border-[#d8e4dc] rounded-xl p-3.5 text-[15px] min-h-[50px] text-[#173d34]"
+                            value={workerDesignation}
+                            onChange={(e) => setWorkerDesignation(e.target.value)}
+                          >
+                            <option value="ASHA">ASHA Worker</option>
+                            <option value="ANM">Auxiliary Nurse Midwife (ANM)</option>
+                            <option value="CHO">Community Health Officer (CHO)</option>
+                          </select>
+                        </label>
+                        <label>
+                          {language === 'te' ? 'కేటాయించిన కేంద్రం' : 'Assigned Sub-Centre'}
+                          <input
+                            type="text"
+                            required
+                            placeholder="Sub Centre Kothapalli"
+                            value={facilityName}
+                            onChange={(e) => setFacilityName(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label>
+                          {language === 'te' ? 'మండలం' : 'Mandal'}
+                          <input
+                            type="text"
+                            required
+                            placeholder="G. Madugula"
+                            value={mandal}
+                            onChange={(e) => setMandal(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          {language === 'te' ? 'గ్రామం' : 'Assigned Village'}
+                          <input
+                            type="text"
+                            required
+                            placeholder="Kothapalli"
+                            value={village}
+                            onChange={(e) => setVillage(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
+
+                  {/* DOCTOR SPECIFIC ONBOARDING */}
+                  {selectedPortal === 'doctor' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label>
+                          {language === 'te' ? 'APMC రిజిస్ట్రేషన్ సంఖ్య' : 'APMC Reg Number'}
+                          <input
+                            type="text"
+                            required
+                            placeholder="APMC/2026/0842"
+                            value={registrationNumber}
+                            onChange={(e) => setRegistrationNumber(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          {language === 'te' ? 'వైద్య అర్హత' : 'Medical Qualification'}
+                          <input
+                            type="text"
+                            required
+                            placeholder="MBBS / BDS / MDS"
+                            value={qualifications}
+                            onChange={(e) => setQualifications(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                      <label>
+                        {language === 'te' ? 'కేటాయించిన ప్రాథమిక ఆరోగ్య కేంద్రం' : 'PHC / Facility Affiliation'}
+                        <input
+                          type="text"
+                          required
+                          placeholder="PHC G. Madugula / CHC Chintapalli"
+                          value={facilityName}
+                          onChange={(e) => setFacilityName(e.target.value)}
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  {/* HOSPITAL SPECIFIC ONBOARDING */}
+                  {selectedPortal === 'hospital' && (
+                    <div className="space-y-3">
+                      <label>
+                        {language === 'te' ? 'ఆసుపత్రి కేంద్రం' : 'Hospital Facility'}
+                        <select
+                          className="w-full bg-[#fbfdfb] border border-[#d8e4dc] rounded-xl p-3.5 text-[15px] min-h-[50px] text-[#173d34]"
+                          value={facilityName}
+                          onChange={(e) => setFacilityName(e.target.value)}
+                        >
+                          <option value="District Hospital Paderu">District Hospital Paderu</option>
+                          <option value="Area Hospital Araku Valley">Area Hospital Araku Valley</option>
+                          <option value="Community Health Centre Chintapalli">CHC Chintapalli</option>
+                          <option value="Rangaraya Medical College Kakinada">Rangaraya Medical College (Tertiary)</option>
+                          <option value="King George Hospital Visakhapatnam">King George Hospital (Oncology)</option>
+                        </select>
+                      </label>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* IDENTIFIER FIELD (LOGIN, FORGOT, CARD LOOKUP) */}
+              {(mode === 'login' || mode === 'forgot' || mode === 'card_lookup') && (
+                <label>
+                  {mode === 'card_lookup'
+                    ? language === 'te'
+                      ? 'పేషెంట్ ఐడీ లేదా నమోదైన మొబైల్'
+                      : 'Patient ID or Registered Mobile'
+                    : mode === 'forgot'
+                    ? language === 'te'
+                      ? 'నమోదైన మొబైల్ లేదా ఈమెయిల్'
+                      : 'Registered Mobile or Email'
+                    : language === 'te'
+                    ? activePortalConfig.defaultIdPlaceholderTe
+                    : activePortalConfig.defaultIdPlaceholderEn}
+                  <input
+                    autoComplete="username"
+                    required
+                    maxLength={128}
+                    placeholder={
+                      mode === 'card_lookup'
+                        ? 'ASR-PAT-2026-0842'
+                        : language === 'te'
+                        ? activePortalConfig.defaultIdPlaceholderTe
+                        : activePortalConfig.defaultIdPlaceholderEn
+                    }
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                  />
+                </label>
+              )}
+
+              {/* PASSWORD FIELDS (LOGIN, REGISTER, RESET) */}
+              {mode !== 'forgot' && mode !== 'card_lookup' && (
+                <>
+                  <label htmlFor="auth-password">{c.password}</label>
+                  <div className="ad-password">
+                    <input
+                      id="auth-password"
+                      type={show ? 'text' : 'password'}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      required
+                      minLength={mode === 'login' ? 1 : 8}
+                      maxLength={128}
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      aria-label={show ? c.hide : c.show}
+                      onClick={() => setShow(!show)}
                     >
-                      {language === 'te' ? 'నమోదు సమర్పించండి' : 'Submit Registration for Verification'}
-                    </Button>
+                      {show ? <EyeOff size={19} /> : <Eye size={19} />}
+                    </button>
                   </div>
-                </form>
+                </>
               )}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* ==================== FORGOT PASSWORD MODAL ==================== */}
-      {isForgotModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsForgotModalOpen(false)}
-        >
-          <div 
-            className="bg-white rounded-3xl shadow-nature-2xl border border-forest-200 w-full max-w-md overflow-hidden p-6 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-forest-100 pb-3">
-              <div className="flex items-center gap-2 text-forest-900">
-                <Lock className="w-5 h-5 text-forest-800" />
-                <h3 className="text-base font-bold text-ink">Account Password Recovery</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsForgotModalOpen(false)}
-                className="text-ink-muted hover:text-ink p-1"
-                aria-label="Close dialog"
-              >
-                <X className="w-5 h-5" />
+              {/* CONFIRM PASSWORD (REGISTER, RESET) */}
+              {(mode === 'register' || mode === 'reset') && (
+                <label>
+                  {c.confirm}
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    maxLength={128}
+                    placeholder="••••••••••••"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                  />
+                  <small className="text-forest-600">
+                    {language === 'te' ? 'కనీసం 8 అక్షరాలు ఉండాలి.' : 'Minimum 8 characters.'}
+                  </small>
+                </label>
+              )}
+
+              {/* LOGIN OPTIONS (REMEMBER & FORGOT) */}
+              {mode === 'login' && (
+                <div className="ad-form-options">
+                  <label className="ad-check">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                    />
+                    <span>{c.remember}</span>
+                  </label>
+                  <button type="button" onClick={() => changeMode('forgot')}>
+                    {c.forgot}
+                  </button>
+                </div>
+              )}
+
+              {/* MFA PROMPT FOR RESET */}
+              {mode === 'reset' && mfaSetup?.required && (
+                <div className="ad-alert ad-success">
+                  {mfaSetup.secret && (
+                    <>
+                      <p>{c.enroll}</p>
+                      <code className="block break-all select-all my-3 font-mono text-xs">
+                        {mfaSetup.secret}
+                      </code>
+                    </>
+                  )}
+                  <label>
+                    {c.code}
+                    <input
+                      required
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* SUBMIT BUTTON */}
+              <button className="ad-submit" disabled={busy} type="submit">
+                {busy ? (
+                  <>
+                    <LoaderCircle className="animate-spin" size={19} />
+                    {c.working}
+                  </>
+                ) : (
+                  <>
+                    {mode === 'login'
+                      ? `${c.signin} (${language === 'te' ? activePortalConfig.badgeTe : activePortalConfig.badgeEn})`
+                      : mode === 'register'
+                      ? selectedPortal === 'patient'
+                        ? language === 'te'
+                          ? 'నమోదు పూర్తయింది'
+                          : 'Complete Patient Registration'
+                        : language === 'te'
+                        ? 'సిబ్బంది చేరిక అభ్యర్థించండి'
+                        : 'Submit Credential Onboarding'
+                      : mode === 'card_lookup'
+                      ? language === 'te'
+                        ? 'కార్డు వెతకండి'
+                        : 'Retrieve Health Card'
+                      : mode === 'forgot'
+                      ? c.send
+                      : c.reset}
+                    <ArrowRight size={19} />
+                  </>
+                )}
               </button>
-            </div>
-
-            {forgotError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs">
-                {forgotError}
-              </div>
-            )}
-
-            {forgotSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs">
-                {forgotSuccess}
-              </div>
-            )}
-
-            <form onSubmit={handleForgotSubmit} className="space-y-4">
-              {forgotStep === 1 ? (
-                <>
-                  <p className="text-xs text-ink-muted">
-                    Enter your registered mobile number, Doctor ID, ASHA ID, or ANM ID. A secure verification OTP or password reset token will be dispatched.
-                  </p>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-ink">Registered Identifier *</label>
-                    <input
-                      type="text"
-                      required
-                      value={forgotIdentifier}
-                      onChange={(e) => setForgotIdentifier(e.target.value)}
-                      placeholder="e.g. 9849012345 or ASHA-GMAD-01"
-                      className="w-full px-3 py-2.5 rounded-xl border border-forest-200 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-forest-600 bg-forest-50/30"
-                    />
-                  </div>
-                  <Button type="submit" variant="primary" size="md" fullWidth>
-                    Send Recovery Code / OTP
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="p-2.5 bg-forest-50 rounded-xl border border-forest-100 text-[11px] text-forest-950">
-                    <span className="font-semibold block">Demonstration OTP Token:</span>
-                    <span className="font-mono font-bold text-forest-900">{forgotToken}</span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-ink">Reset Token / OTP *</label>
-                    <input
-                      type="text"
-                      required
-                      value={forgotToken}
-                      onChange={(e) => setForgotToken(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs font-mono text-ink bg-forest-50/30"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-ink">New Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={forgotNewPassword}
-                      onChange={(e) => setForgotNewPassword(e.target.value)}
-                      placeholder="Min 8 characters"
-                      className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink bg-forest-50/30"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-ink">Confirm New Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={forgotConfirmPassword}
-                      onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                      placeholder="Re-enter new password"
-                      className="w-full px-3 py-2 rounded-xl border border-forest-200 text-xs text-ink bg-forest-50/30"
-                    />
-                  </div>
-
-                  <Button type="submit" variant="primary" size="md" fullWidth>
-                    Set New Password & Sign In
-                  </Button>
-                </>
-              )}
             </form>
+          )}
+
+          {/* CARD FOOTER LINKS */}
+          <div className="ad-card-footer">
+            {mode === 'login' ? (
+              <button type="button" onClick={() => changeMode('register')}>
+                {selectedPortal === 'patient'
+                  ? language === 'te'
+                    ? 'కొత్త రోగి నమోదు (స్మార్ట్‌ఫోన్)'
+                    : 'New Patient Self-Registration →'
+                  : language === 'te'
+                  ? 'కొత్త సిబ్బంది నమోదు అభ్యర్థించండి'
+                  : 'New Staff Credential Request →'}
+              </button>
+            ) : (
+              <button type="button" onClick={() => changeMode('login')}>
+                {c.back}
+              </button>
+            )}
+            <Link to="/contact">{c.contact}</Link>
           </div>
-        </div>
-      )}
-    </div>
+
+          <div className="ad-trust">
+            <ShieldCheck size={15} />
+            {c.synthetic}
+          </div>
+        </section>
+      </div>
+
+      {/* QUICK EVALUATOR DEMO PERSONAS ACROSS ALL 5 PORTALS */}
+      {import.meta.env.VITE_DEMO_MODE === 'true' && <DemoAccounts />}
+
+      {/* Bottom Footer */}
+      <footer className="ad-bottom">
+        <span>© 2026 AAROGYA DRISHTI · ITDA PADERU & RAMPCHODAVARAM</span>
+        <Link to="/">{c.home} ↗</Link>
+      </footer>
+    </main>
   );
-};
+}

@@ -10,6 +10,7 @@ export interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -21,7 +22,9 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidth = 'md',
+  size,
 }) => {
+  const effectiveMaxWidth = size || maxWidth;
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -61,7 +64,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Window */}
       <div
-        className={`relative w-full ${widthClasses[maxWidth]} bg-white rounded-3xl shadow-nature-lg border border-forest-100 overflow-hidden transform transition-all my-8 z-10`}
+        className={`relative w-full ${widthClasses[effectiveMaxWidth]} bg-white rounded-3xl shadow-nature-lg border border-forest-100 overflow-hidden transform transition-all my-8 z-10`}
       >
         {/* Header */}
         <div className="flex items-start justify-between p-5 sm:p-6 border-b border-forest-100/70 bg-forest-50/40">

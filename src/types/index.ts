@@ -45,11 +45,16 @@ export interface UserAccount {
   username: string;
   name: string;
   nameTe: string;
+  fullName?: string;
   role: UserRole;
   roleTitle: string;
   roleTitleTe: string;
   facility: string;
+  facilityName?: string;
+  assignedHealthCentre?: string;
   district: string;
+  mandal?: string;
+  village?: string;
   assignedVillages?: string[];
   avatarUrl?: string;
   // Designation-specific registration fields
@@ -59,7 +64,6 @@ export interface UserAccount {
   registrationNumber?: string;
   phone?: string;
   email?: string;
-  mandal?: string;
   subCentre?: string;
   department?: string;
   relationship?: string;

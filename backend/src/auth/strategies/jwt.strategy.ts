@@ -1,3 +1,4 @@
+import { cookieValue } from '../session-cookies';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -12,10 +13,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const jwtSecret =
       configService.get<string>('jwt.secret') ||
       process.env.JWT_SECRET ||
-      'dev_jwt_secret_key_aarogya_drishti_2026';
+      process.env.JWT_SECRET!;
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([req=>cookieValue(req,'ad_access')||null,ExtractJwt.fromAuthHeaderAsBearerToken()]),
       ignoreExpiration: false,
       secretOrKey: jwtSecret,
     });
@@ -33,13 +34,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     await this.auth.assertActiveSession(payload);
+    const profile=await this.auth.getMe(payload.sub);
     return {
       id: payload.sub,
       username: payload.username,
-      role: payload.primaryRole || (payload.roles && payload.roles[0]) || 'GUEST',
-      facilityId: payload.facilityId,
-      assignedVillages: payload.assignedVillages || [],
-      assignedVillageIds: payload.assignedVillageIds || [],
+      role: profile.role,
+      facilityId: profile.facilityId,
+      assignedVillages: profile.assignedVillages || [],
+      assignedVillageIds: profile.assignedVillageIds || [],
     };
   }
 }

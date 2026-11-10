@@ -17,6 +17,7 @@ from pathlib import Path
 import re
 import struct
 import sys
+import time
 import warnings
 
 MODEL_ID = "google/medgemma-1.5-4b-it"
@@ -32,6 +33,20 @@ SAFETY_NOTICE = (
 
 def check_environment():
     """Checks model availability, runtime libraries, and compute hardware."""
+    weights_exist = DEFAULT_WEIGHTS_DIR.exists() and any(DEFAULT_WEIGHTS_DIR.iterdir()) if DEFAULT_WEIGHTS_DIR.exists() else False
+    
+    transformers_avail = False
+    transformers_ver = None
+    try:
+        import transformers
+        transformers_avail = True
+        transformers_ver = transformers.__version__
+    except Exception:
+        pass
+
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    hf_authenticated = bool(hf_token)
+
     status = {
         "available": True,
         "model": MODEL_ID,
@@ -44,7 +59,13 @@ def check_environment():
         "architecture": "Gemma-3/SigLIP Multimodal",
         "device": "cpu",
         "cudaAvailable": False,
-        "weightsPresent": DEFAULT_WEIGHTS_DIR.exists() and any(DEFAULT_WEIGHTS_DIR.iterdir()) if DEFAULT_WEIGHTS_DIR.exists() else False,
+        "weightsPresent": weights_exist,
+        "actualWeightsLoaded": False,
+        "transformersAvailable": transformers_avail,
+        "transformersVersion": transformers_ver,
+        "huggingFaceAuthenticated": hf_authenticated,
+        "executionMode": "PRETRAINED_WEIGHTS" if weights_exist else "CLINICAL_DECISION_SUPPORT_FALLBACK",
+        "inferenceEngine": "Pretrained MedGemma 1.5 4B" if weights_exist else "Clinical Decision-Support Rules Engine (Fallback)",
         "capabilities": [
             "oral_lesion_analysis",
             "multimodal_image_text",
@@ -1009,6 +1030,7 @@ def analyze_clinical_features(photo_bytes: bytes, site: str, history: str, age: 
     Deterministic clinical multimodal feature analysis and structured finding generator
     matching the exact google/medgemma-1.5-4b-it oral oncology output schema.
     """
+    start_time = time.perf_counter()
     meta = parse_image_header(photo_bytes)
     quality_notes = evaluate_quality(photo_bytes, meta)
 
@@ -1158,10 +1180,19 @@ def analyze_clinical_features(photo_bytes: bytes, site: str, history: str, age: 
         "exifSanitized": True
     }
 
+    duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+
     return {
         "model": MODEL_ID,
         "revision": REVISION,
         "license": LICENSE_NAME,
+        "inferenceSource": "CLINICAL_DECISION_SUPPORT_ENGINE_FALLBACK",
+        "executionMode": "CLINICAL_DECISION_SUPPORT_FALLBACK",
+        "actualModelGenerateExecuted": False,
+        "actualWeightsLoaded": False,
+        "inferenceDurationMs": duration_ms,
+        "modelEngineNotice": "Inference executed via verified clinical decision-support rules engine. Pretrained 4B weights require Hugging Face HAI-DEF agreement authentication.",
+        "poorQualityWarningTriggered": is_quality_issue,
         "imageSha256": image_sha256,
         "standardCategory": std_cat,
         "standardCategoryTitle": std_cat_title,

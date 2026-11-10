@@ -41,6 +41,7 @@ export interface DoctorCase {
     score: null;
     isClinical: false;
     disclaimer: string;
+    medgemmaReport?: any;
   };
   review?: {
     doctorName: string;

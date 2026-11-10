@@ -10,18 +10,37 @@ import { assessPhoto } from './image-quality';
 
 describe('PostgreSQL care integration', () => {
  let service: CareService, dir: string, schema: string;
- const worker: RequestUser={id:'worker',username:'worker',role:'ASHA_WORKER',assignedVillages:['Kothapalli']};
- const doctor: RequestUser={id:'doctor',username:'doctor',role:'MEDICAL_OFFICER',assignedVillages:['Kothapalli']};
- const hospital: RequestUser={id:'f1e4d653-1421-717e-c072-040404040404',username:'hospital',role:'HOSPITAL_STAFF'};
+ const worker: RequestUser={id:'worker',username:'worker',role:'ASHA_WORKER',facilityId:'clinic',assignedVillages:['Kothapalli']};
+ const doctor: RequestUser={id:'doctor',username:'doctor',role:'MEDICAL_OFFICER',facilityId:'clinic',assignedVillages:['Kothapalli']};
+ const hospital: RequestUser={id:'f1e4d653-1421-717e-c072-040404040404',username:'hospital',role:'HOSPITAL_STAFF',facilityId:'hospital'};
  const admin: RequestUser={id:'admin',username:'admin',role:'DISTRICT_ADMIN'};
  const payload={name:'Synthetic patient',age:46,sex:'male',village:'Kothapalli',mandal:'G. Madugula',history:'Tobacco daily for 20 years',symptoms:'White patch for 3 weeks',consent:true};
- beforeEach(()=>{dir=mkdtempSync(join(tmpdir(),'care-test-'));schema='test_care_'+Date.now()+'_'+Math.floor(Math.random()*10000);process.env.CARE_SCHEMA=schema;process.env.CARE_DATA_DIR=dir;service=new CareService();});
+ beforeEach(()=>{dir=mkdtempSync(join(tmpdir(),'care-test-'));schema='test_care_'+Date.now()+'_'+Math.floor(Math.random()*10000);process.env.CARE_SCHEMA=schema;process.env.CARE_DATA_DIR=dir;service=new CareService();jest.spyOn(service,'directory').mockResolvedValue([{id:hospital.id,role:'HOSPITAL_STAFF',facilityId:'hospital',facility:'Hospital'},{id:'specialist',role:'SPECIALIST_DOCTOR',facilityId:'hospital',facility:'Hospital'}]);});
  afterEach(async()=>{await service.onModuleDestroy();const pool=new Pool({connectionString:process.env.DATABASE_URL?.replace(/\?schema=.*$/,'')});await pool.query('DROP SCHEMA '+schema+' CASCADE');await pool.end();delete process.env.CARE_SCHEMA;delete process.env.CARE_DATA_DIR;rmSync(dir,{recursive:true,force:true});});
  async function photo(){const raw=Buffer.alloc(640*480*3);for(let y=0;y<480;y++)for(let x=0;x<640;x++){const v=((x>>3)+(y>>3))%2?170:80;raw.fill(v,(y*640+x)*3,(y*640+x)*3+3);}return 'data:image/png;base64,'+(await sharp(raw,{raw:{width:640,height:480,channels:3}}).png().toBuffer()).toString('base64');}
  it('persists and deduplicates concurrent retries, denies unassigned access',async()=>{
   const [a,b]=await Promise.all([service.create(payload,worker,'one'),service.create(payload,worker,'one')]);expect(a.id).toBe(b.id);
   await expect(service.get(a.id,admin)).rejects.toThrow();await expect(service.get(a.id,hospital)).rejects.toThrow();
   await service.onModuleDestroy();service=new CareService();expect((await service.get(a.id,worker)).name).toBe(payload.name);
+ });
+ it('shares consultation signaling across backend instances',async()=>{
+  const c=await service.create(payload,worker,'video');
+  await service.join(c.id,worker);
+  const second=new CareService();
+  try {
+   await second.join(c.id,doctor);
+   await second.signal(c.id,doctor,{offer:'synthetic'});
+   expect(await service.signal(c.id,worker)).toEqual([expect.objectContaining({from:doctor.id,data:{offer:'synthetic'}})]);
+  } finally {await second.onModuleDestroy();}
+ });
+ it('denies wrong-facility clinicians and non-referred specialists',async()=>{
+  const c=await service.create(payload,worker,'scope');
+  await expect(service.get(c.id,{...doctor,facilityId:'unrelated'})).rejects.toThrow();
+  await expect(service.get(c.id,{...doctor,role:'SPECIALIST_DOCTOR'})).rejects.toThrow();
+ });
+ it('redacts navigator clinical images and notes',async()=>{
+  const c=await service.create(payload,worker,'redaction');
+  const view=service.present(c,hospital);expect(view.history).toBe('');expect(view.symptoms).toBe('');expect(view.images).toEqual([]);expect(view.events).toEqual([]);
  });
  it('rejects missing consent, stale updates and invalid image bytes',async()=>{
   await expect(service.create({...payload,consent:false},worker,'one')).rejects.toThrow();
@@ -35,11 +54,11 @@ describe('PostgreSQL care integration', () => {
   await act('IMAGE',worker,{image:await photo(),site:'Tongue',photographyConsent:true,commandId:'photo-one'});const version=c.version;
   await act('IMAGE',worker,{image:await photo(),site:'Tongue',photographyConsent:true,commandId:'photo-one'});expect(c.version).toBe(version);expect(c.images.length).toBe(2);
   await act('AI_DEMO',worker,{researchConsent:true});await act('SUBMIT',worker);
-  await act('REVIEW',doctor,{notes:'Independent findings',decision:'REFER',aiAgreement:'DISAGREE',coordinatorId:hospital.id,hospital:'District hospital'});
+  await act('REVIEW',doctor,{notes:'Independent findings',decision:'REFER',aiAgreement:'DISAGREE',coordinatorId:hospital.id,specialistId:'specialist',hospital:'District hospital'});
   const at=new Date(Date.now()+86400000).toISOString();await act('APPOINTMENT',hospital,{at,location:'Hospital',specialty:'Oral medicine'});
   await act('ATTENDANCE',hospital,{outcome:'MISSED',notes:'Transport'});await act('APPOINTMENT',hospital,{at,location:'Hospital',specialty:'Oral medicine'});
   await act('ATTENDANCE',hospital,{outcome:'ATTENDED',notes:'Arrived'});await act('INVESTIGATION',doctor,{notes:'Simulated biopsy'});
-  await act('REPORT',hospital,{stage:'RECEIVED',notes:'Synthetic result'});await act('DIAGNOSIS',doctor,{notes:'Clinician result',treatment:'Treatment linked'});
+  await act('REPORT',doctor,{stage:'RECEIVED',notes:'Synthetic result'});await act('DIAGNOSIS',doctor,{notes:'Clinician result',treatment:'Treatment linked'});
   await act('FOLLOW_UP',worker,{at,notes:'Attendance confirmed',completed:true});expect(c.status).toBe('COMPLETED');expect((await service.summary(admin)).counts.COMPLETED).toBe(1);
   await act('CONSENT_WITHDRAW',worker,{notes:'Patient requested'});await expect(act('AI_DEMO',worker,{researchConsent:true})).rejects.toThrow('withdrawn');
  });

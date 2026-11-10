@@ -3,7 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { json } from 'express';
+import { json, Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -19,6 +19,15 @@ async function bootstrap(): Promise<void> {
   const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
   const corsOrigin = configService.get<string>('CORS_ORIGIN', 'http://localhost:5173');
 
+  app.use((req:Request,res:Response,next:NextFunction)=>{
+    res.setHeader('Cache-Control','no-store');
+    if(!['GET','HEAD','OPTIONS'].includes(req.method)) {
+      const origin=req.headers.origin;
+      const allowed=corsOrigin.split(',').map(x=>x.trim());
+      if((origin && !allowed.includes(origin)) || (req.headers.cookie && req.headers['x-session-mode']!=='cookie')) {res.status(403).json({message:'ORIGIN_REJECTED'});return;}
+    }
+    next();
+  });
   // Security Headers via Helmet
   app.use(
     helmet({
@@ -34,6 +43,8 @@ async function bootstrap(): Promise<void> {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
+      'X-Session-Mode',
+      'X-Remember-Me',
       'Authorization',
       'X-Idempotency-Key',
       'x-request-id',
@@ -51,7 +62,7 @@ async function bootstrap(): Promise<void> {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transformOptions: {
         enableImplicitConversion: true,
       },
